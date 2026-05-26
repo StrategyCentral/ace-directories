@@ -1,0 +1,66 @@
+{
+  "slug": "ald",
+  "name": "Aussie Lawyer Directory",
+  "tenant_type": "lawyer_directory",
+  "domain": "aussielawyerdirectory.com.au",
+  "country": "AU",
+  "region": "national",
+  "brand": {
+    "primaryColor": "#1a3a5c",
+    "accentColor": "#c9a84c",
+    "backgroundColor": "#f8f9fa",
+    "fontFamily": "Inter",
+    "logoUrl": "/tenants/ald/logo.svg",
+    "faviconUrl": "/tenants/ald/favicon.ico"
+  },
+  "agent": {
+    "name": "Lexie",
+    "greeting": "Hi! I'm Lexie, your guide to finding the right lawyer in Australia. How can I help?",
+    "persona": "friendly_paralegal",
+    "model": "claude-haiku-4-5-20251001",
+    "escalation_model": "claude-sonnet-4-6"
+  },
+  "seo": {
+    "defaultTitle": "Aussie Lawyer Directory — Find a Lawyer in Australia",
+    "defaultDescription": "Search 6,000+ Australian lawyers and law firms by location and practice area. Free listings, verified profiles, and AI-powered legal guidance.",
+    "ogImage": "/tenants/ald/og-image.jpg"
+  },
+  "features": {
+    "aiChat": true,
+    "reviews": true,
+    "enquiryForms": true,
+    "boostListings": true,
+    "legalGuides": true,
+    "mapView": true
+  },
+  "stripe": {
+    "products": {
+      "verified": "ALD_VERIFIED",
+      "featured": "ALD_FEATURED",
+      "lead_gen": "ALD_LEAD_GEN",
+      "firm_pack": "ALD_FIRM_PACK"
+    },
+    "prices": {
+      "verified_monthly": 49,
+      "featured_monthly": 99,
+      "lead_gen_monthly": 199,
+      "firm_pack_monthly": 299
+    }
+  },
+  "resend": {
+    "fromName": "Aussie Lawyer Directory",
+    "fromEmail": "hello@aussielawyerdirectory.com.au",
+    "replyTo": "support@aussielawyerdirectory.com.au"
+  },
+  "legalAid": {
+    "national": { "name": "National Legal Aid", "phone": "1300 888 529", "url": "https://www.nationallegalaid.org" },
+    "NSW": { "name": "Legal Aid NSW", "phone": "1300 888 529", "url": "https://www.legalaid.nsw.gov.au" },
+    "VIC": { "name": "Victoria Legal Aid", "phone": "1300 792 387", "url": "https://www.legalaid.vic.gov.au" },
+    "QLD": { "name": "Legal Aid Queensland", "phone": "1300 65 11 88", "url": "https://www.legalaid.qld.gov.au" },
+    "WA":  { "name": "Legal Aid WA", "phone": "1300 650 579", "url": "https://www.legalaid.wa.gov.au" },
+    "SA":  { "name": "Legal Services Commission SA", "phone": "1300 366 424", "url": "https://www.lsc.sa.gov.au" },
+    "TAS": { "name": "Legal Aid Commission Tasmania", "phone": "1300 366 611", "url": "https://www.legalaid.tas.gov.au" },
+    "ACT": { "name": "Legal Aid ACT", "phone": "02 6243 3411", "url": "https://www.legalaidact.org.au" },
+    "NT":  { "name": "NT Legal Aid Commission", "phone": "1800 019 343", "url": "https://www.ntlac.com.au" }
+  }
+}

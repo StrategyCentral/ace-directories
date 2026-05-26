@@ -1,0 +1,25 @@
+{
+  "national": {
+    "name": "National Legal Aid",
+    "phone": "1300 888 529",
+    "url": "https://www.nationallegalaid.org",
+    "hours": "24/7"
+  },
+  "states": {
+    "NSW": { "name": "Legal Aid NSW", "phone": "1300 888 529", "url": "https://www.legalaid.nsw.gov.au" },
+    "VIC": { "name": "Victoria Legal Aid", "phone": "1300 792 387", "url": "https://www.legalaid.vic.gov.au" },
+    "QLD": { "name": "Legal Aid Queensland", "phone": "1300 65 11 88", "url": "https://www.legalaid.qld.gov.au" },
+    "WA":  { "name": "Legal Aid WA", "phone": "1300 650 579", "url": "https://www.legalaid.wa.gov.au" },
+    "SA":  { "name": "Legal Services Commission SA", "phone": "1300 366 424", "url": "https://www.lsc.sa.gov.au" },
+    "TAS": { "name": "Legal Aid Commission Tasmania", "phone": "1300 366 611", "url": "https://www.legalaid.tas.gov.au" },
+    "ACT": { "name": "Legal Aid ACT", "phone": "02 6243 3411", "url": "https://www.legalaidact.org.au" },
+    "NT":  { "name": "NT Legal Aid Commission", "phone": "1800 019 343", "url": "https://www.ntlac.com.au" }
+  },
+  "specialised": {
+    "domestic_violence": { "name": "1800RESPECT", "phone": "1800 737 732", "url": "https://www.1800respect.org.au", "hours": "24/7" },
+    "community_legal": { "name": "Community Legal Centres", "url": "https://www.communitylegalcentres.org.au" },
+    "indigenous": { "name": "ATSILS (Indigenous Legal Aid)", "phone": "1800 012 255", "url": "https://www.atsils.org.au" },
+    "tenancy": { "name": "Tenants' Union (varies by state)", "url": "https://www.tenants.org.au" }
+  },
+  "trigger_keywords": ["arrested", "charged", "domestic violence", "DV", "restraining order", "AVO", "eviction", "bankruptcy", "urgent", "emergency", "court tomorrow", "going to court"]
+}
