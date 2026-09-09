@@ -11,6 +11,9 @@ import LinkCloud from "@/components/LinkCloud";
 import Reveal from "@/components/Reveal";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import { SITE, STATE_BY_SLUG, STATES } from "@/lib/site";
+import { PRACTICE_CONTENT, fallbackContent } from "@/content/practice-content";
+import { stateContext } from "@/content/states";
+import { FaqSchema, PracticeArticle } from "@/components/ContentSections";
 
 export const revalidate = 86400;
 
@@ -64,6 +67,11 @@ export default async function PracticePlacePage({
     state: isState ? resolved.state!.code : undefined,
     limit: 24,
   });
+
+  const stateCode = isState ? resolved.state!.code : resolved.suburb!.state;
+  const ctx = stateContext(stateCode);
+  const content =
+    PRACTICE_CONTENT[area.slug] ?? fallbackContent(area.name, singular, area.blurb);
 
   const [otherAreas, nearby, otherSuburbs] = await Promise.all([
     isState ? Promise.resolve([]) : suburbPaCounts(resolved.suburb!.id),
@@ -141,6 +149,15 @@ export default async function PracticePlacePage({
       </div>
 
       <div className="mx-auto max-w-[1240px] px-5 pb-10">
+        <section className="mt-6 pt-14 edge-t">
+          <PracticeArticle
+            content={content}
+            name={area.name}
+            singular={singular}
+            state={ctx}
+          />
+        </section>
+
         {!isState && otherAreas.length > 0 && (
           <LinkCloud
             title={`Other legal help in ${shortWhere}`}
@@ -185,6 +202,8 @@ export default async function PracticePlacePage({
           }))}
         />
       </div>
+
+      <FaqSchema faqs={content.faqs} />
 
       <script
         type="application/ld+json"

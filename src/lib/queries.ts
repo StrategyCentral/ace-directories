@@ -249,6 +249,45 @@ export async function getListingDaily(
   }
 }
 
+/* -------------------------------------------------------------- reviews */
+
+export interface PublicReview {
+  id: string;
+  author_name: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  matter_type: string | null;
+  published_at: string | null;
+  created_at: string;
+  reply: string | null;
+  replied_at: string | null;
+}
+
+export async function getListingReviews(listingId: string, limit = 20): Promise<PublicReview[]> {
+  try {
+    const { data } = await db()
+      .from("reviews")
+      .select("id,author_name,rating,title,body,matter_type,published_at,created_at,reply,replied_at")
+      .eq("listing_id", listingId)
+      .eq("status", "approved")
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    return (data as unknown as PublicReview[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getRatingBreakdown(listingId: string): Promise<{ rating: number; n: number }[]> {
+  try {
+    const { data } = await db().rpc("listing_rating_breakdown", { listing: listingId });
+    return (data as { rating: number; n: number }[]) ?? [];
+  } catch {
+    return [5, 4, 3, 2, 1].map((rating) => ({ rating, n: 0 }));
+  }
+}
+
 export const getPlans = cache(async (): Promise<Plan[]> => {
   const { data } = await db().from("plans").select("*").eq("is_public", true)
     .order("sort_order", { ascending: true });

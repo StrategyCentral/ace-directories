@@ -265,6 +265,51 @@ export function outreachEmail(opts: {
   };
 }
 
+export function reviewVerifyEmail(opts: {
+  firstName: string;
+  firmName: string;
+  token: string;
+}) {
+  const url = `${SITE.url}/api/reviews/verify?token=${encodeURIComponent(opts.token)}`;
+  return {
+    subject: `Confirm your review of ${opts.firmName}`,
+    html: shell(
+      `<p>Hi ${opts.firstName},</p>
+       <p>Thanks for reviewing <strong>${opts.firmName}</strong>. Confirm your email address
+       and we'll put it in the queue.</p>
+       ${button(url, "Confirm my review")}
+       <p style="color:#697586;font-size:13px;">Every review is read by a person before it is
+       published — usually within a business day. We publish criticism as readily as praise;
+       what we check is that the review is genuine and lawful.</p>
+       <p style="color:#697586;font-size:13px;">Didn't write this? Ignore this email and
+       nothing will be published.</p>`,
+      `Confirm your review of ${opts.firmName}`,
+    ),
+  };
+}
+
+export function reviewLiveEmail(opts: {
+  firmName: string;
+  slug: string;
+  rating: number;
+  authorName: string;
+}) {
+  return {
+    subject: `New ${opts.rating}-star review for ${opts.firmName}`,
+    html: shell(
+      `<p>${opts.authorName} has left ${opts.firmName} a ${opts.rating}-star review, and it is
+       now live on your profile.</p>
+       <p>You can reply to it from your dashboard. A considered reply to a critical review
+       tends to read better to prospective clients than the review itself.</p>
+       ${button(`${SITE.url}/dashboard`, "Read and reply")}
+       <p style="color:#697586;font-size:13px;">If you believe a review is fake, defamatory or
+       breaches our guidelines, report it from your profile page and it comes down immediately
+       while we look at it.</p>`,
+      `New review for ${opts.firmName}`,
+    ),
+  };
+}
+
 export function enquiryEmail(opts: {
   firmName: string;
   name: string;

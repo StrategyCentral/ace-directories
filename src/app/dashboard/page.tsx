@@ -8,6 +8,7 @@ import type { Listing } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import ProfileEditor from "@/components/ProfileEditor";
 import ActivityPanel from "@/components/ActivityPanel";
+import FirmReviews from "@/components/FirmReviews";
 import TierBadge from "@/components/TierBadge";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ data: listings }, areas, { data: enquiries }] = await Promise.all([
+  const [{ data: listings }, areas, { data: enquiries }, { data: reviewRows }] = await Promise.all([
     supabase.from("lawyers").select("*").in("id", ids),
     getPracticeAreas(),
     supabase
@@ -55,6 +56,13 @@ export default async function DashboardPage() {
       .in("listing_id", ids)
       .order("created_at", { ascending: false })
       .limit(25),
+    supabase
+      .from("reviews")
+      .select("id,listing_id,author_name,rating,title,body,published_at,created_at,reply,replied_at")
+      .in("listing_id", ids)
+      .eq("status", "approved")
+      .order("published_at", { ascending: false })
+      .limit(50),
   ]);
 
   const rows = (listings ?? []) as unknown as Listing[];
@@ -106,6 +114,11 @@ export default async function DashboardPage() {
             <ActivityPanel activity={activity[l.id].stats} daily={activity[l.id].daily} />
 
             <ProfileEditor listing={l} areas={areas} />
+
+            <FirmReviews
+              reviews={(reviewRows ?? []).filter((r) => r.listing_id === l.id)}
+              firmName={l.full_name}
+            />
           </section>
         ))}
 

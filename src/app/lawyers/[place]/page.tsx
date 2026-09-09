@@ -7,9 +7,11 @@ import {
 import PageHeader from "@/components/PageHeader";
 import ListingCard from "@/components/ListingCard";
 import LinkCloud from "@/components/LinkCloud";
-import Reveal from "@/components/Reveal";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import { SITE, STATE_BY_SLUG, STATES } from "@/lib/site";
+import { stateContext } from "@/content/states";
+import { Prose, SectionHead } from "@/components/ContentSections";
+import Reveal from "@/components/Reveal";
 
 export const revalidate = 86400;
 
@@ -42,6 +44,8 @@ export default async function PlacePage({ params }: { params: Promise<{ place: s
 
   const where = state ? state.name : `${suburb!.name}, ${suburb!.state}`;
   const shortWhere = state ? state.name : suburb!.name;
+
+  const ctx = stateContext(state ? state.code : suburb!.state);
 
   const [{ rows, total }, areas, nearby, stateSuburbs] = await Promise.all([
     searchListings({
@@ -118,6 +122,70 @@ export default async function PlacePage({ params }: { params: Promise<{ place: s
       </div>
 
       <div className="mx-auto max-w-[1240px] px-5 pb-10">
+        {ctx && (
+          <section className="mt-6 pt-14 edge-t space-y-12">
+            <Reveal>
+              <div>
+                <SectionHead
+                  eyebrow={ctx.name}
+                  title={`Getting legal help in ${shortWhere}`}
+                />
+                <Prose paragraphs={[
+                  `${shortWhere} is served by ${ctx.name}'s court system, and which court hears a matter depends on how serious it is. Most people never see the inside of one — the majority of legal work is advice, documents and negotiation — but it is worth knowing where a matter would go if it escalated.`,
+                  ...ctx.quirks,
+                ]} />
+              </div>
+            </Reveal>
+
+            <Reveal>
+              <div>
+                <SectionHead title={`Courts and tribunals serving ${shortWhere}`} />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 max-w-[980px]">
+                  {ctx.courts.map((c) => (
+                    <div key={c.name} className="surface rounded-[var(--radius-card)] p-5">
+                      <p className="text-[14px] font-medium text-paper-100">{c.name}</p>
+                      <p className="text-[12.5px] leading-relaxed text-paper-500 mt-2">
+                        Handles {c.handles}.
+                      </p>
+                    </div>
+                  ))}
+                  <div className="surface rounded-[var(--radius-card)] p-5">
+                    <p className="text-[14px] font-medium text-paper-100">
+                      {ctx.tribunal.name}{" "}
+                      <span className="text-paper-600">({ctx.tribunal.abbr})</span>
+                    </p>
+                    <p className="text-[12.5px] leading-relaxed text-paper-500 mt-2">
+                      Handles {ctx.tribunal.handles}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal>
+              <div className="surface rounded-2xl p-6 max-w-[820px]">
+                <p className="eyebrow mb-2.5">Check before you engage anyone</p>
+                <p className="text-[14px] leading-relaxed text-paper-300">
+                  Every solicitor practising in {ctx.name} must hold a current practising
+                  certificate, and the register is public. It takes a minute and is the
+                  single best check you can make.
+                </p>
+                <a href={ctx.regulator.register} target="_blank" rel="noopener noreferrer"
+                   className="inline-block mt-4 text-[13.5px] text-brand-400 hover:text-brand-200">
+                  Search the {ctx.regulator.name} register ↗
+                </a>
+              </div>
+            </Reveal>
+
+            <p className="text-[12px] leading-relaxed text-paper-600 max-w-[68ch]">
+              General information only, not legal advice. If you cannot afford a lawyer,{" "}
+              <Link href="/legal-aid" className="underline hover:text-paper-400">
+                Legal Aid operates in every state and territory
+              </Link>.
+            </p>
+          </section>
+        )}
+
         <LinkCloud
           title={`Legal help in ${shortWhere} by practice area`}
           columns

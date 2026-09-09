@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getListing, getNearbyListings, getPracticeAreas } from "@/lib/queries";
+import {
+  getListing, getListingReviews, getNearbyListings, getPracticeAreas, getRatingBreakdown,
+} from "@/lib/queries";
 import { isPaid } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import ListingCard from "@/components/ListingCard";
@@ -9,6 +11,7 @@ import TierBadge from "@/components/TierBadge";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import ClaimBanner from "@/components/ClaimBanner";
 import TrackView, { TrackedLink, TrackedPhone } from "@/components/Track";
+import { RatingSummary, ReviewForm, ReviewList, Stars } from "@/components/Reviews";
 import { SITE, STATES } from "@/lib/site";
 import { initials, telHref } from "@/lib/format";
 
@@ -38,9 +41,11 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
   const listing = await getListing(slug);
   if (!listing || listing.status === "removed") notFound();
 
-  const [nearby, allAreas] = await Promise.all([
+  const [nearby, allAreas, reviews, breakdown] = await Promise.all([
     getNearbyListings(listing, 4),
     getPracticeAreas(),
+    getListingReviews(listing.id),
+    getRatingBreakdown(listing.id),
   ]);
 
   const paid = isPaid(listing.tier);
@@ -69,6 +74,13 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
         meta={
           <div className="flex flex-wrap items-center gap-3">
             <TierBadge tier={listing.tier} claimed={listing.is_claimed} />
+            {listing.review_count > 0 && (
+              <span className="inline-flex items-center gap-2 text-[13px] text-paper-400">
+                <Stars value={listing.review_avg} />
+                <span className="tabular">{listing.review_avg.toFixed(1)}</span>
+                <span className="text-paper-600">({listing.review_count})</span>
+              </span>
+            )}
             {where && <span className="text-[13px] text-paper-400">{where}</span>}
             {listing.phone && (
               <TrackedPhone
@@ -194,6 +206,25 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
               </dl>
             </section>
 
+            <section id="reviews" className="scroll-mt-24">
+              <p className="eyebrow mb-3">Reviews</p>
+              <RatingSummary
+                avg={listing.review_avg}
+                count={listing.review_count}
+                breakdown={breakdown}
+              />
+              <ReviewList reviews={reviews} />
+              <ReviewForm listingId={listing.id} firmName={listing.full_name} />
+              <p className="text-[11.5px] leading-relaxed text-paper-600 mt-4">
+                Every review is confirmed by email and read by a person before publication. We
+                publish criticism as readily as praise, and no firm can pay to have a genuine
+                review removed.{" "}
+                <Link href="/review-policy" className="underline hover:text-paper-400">
+                  Our review policy
+                </Link>.
+              </p>
+            </section>
+
             <p className="text-[11.5px] leading-relaxed text-paper-600">
               Listing details are drawn from public records and firm submissions. Aussie Lawyer
               Directory is not a law firm and does not endorse or recommend any practice. Always
@@ -280,6 +311,24 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
               ? { "@type": "GeoCoordinates", latitude: listing.lat, longitude: listing.lng }
               : undefined,
             areaServed: listing.suburb ?? listing.state ?? "Australia",
+            aggregateRating: listing.review_count > 0
+              ? {
+                  "@type": "AggregateRating",
+                  ratingValue: listing.review_avg,
+                  reviewCount: listing.review_count,
+                  bestRating: 5,
+                  worstRating: 1,
+                }
+              : undefined,
+            review: reviews.slice(0, 5).map((r) => ({
+              "@type": "Review",
+              author: { "@type": "Person", name: r.author_name },
+              datePublished: (r.published_at ?? r.created_at).slice(0, 10),
+              reviewBody: r.body.slice(0, 400),
+              reviewRating: {
+                "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1,
+              },
+            })),
           }),
         }}
       />

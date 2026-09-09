@@ -9,6 +9,8 @@ import ListingCard from "@/components/ListingCard";
 import LinkCloud from "@/components/LinkCloud";
 import Reveal from "@/components/Reveal";
 import { SITE, STATE_BY_CODE, STATES } from "@/lib/site";
+import { PRACTICE_CONTENT, fallbackContent } from "@/content/practice-content";
+import { FaqSchema, PracticeArticle } from "@/components/ContentSections";
 
 export const revalidate = 86400;
 export const dynamicParams = true;
@@ -59,6 +61,8 @@ export default async function PracticePage({
   const { area, rows, total, suburbs, states } = data;
 
   const singular = area.singular ?? area.name;
+  const content =
+    PRACTICE_CONTENT[area.slug] ?? fallbackContent(area.name, singular, area.blurb);
 
   return (
     <>
@@ -103,6 +107,10 @@ export default async function PracticePage({
           </p>
         )}
 
+        <section className="mt-16 pt-14 edge-t">
+          <PracticeArticle content={content} name={area.name} singular={singular} />
+        </section>
+
         <LinkCloud
           title={`${singular}s by suburb`}
           columns
@@ -122,6 +130,8 @@ export default async function PracticePage({
           }))}
         />
       </div>
+
+      <FaqSchema faqs={content.faqs} />
 
       <script
         type="application/ld+json"

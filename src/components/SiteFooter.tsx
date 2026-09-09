@@ -67,6 +67,7 @@ export default async function SiteFooter() {
           <FooterLink href="/about">About ALD</FooterLink>
           <FooterLink href="/contact">Contact</FooterLink>
           <FooterLink href="/legal-aid">Legal Aid</FooterLink>
+          <FooterLink href="/review-policy">Review policy</FooterLink>
         </FooterCol>
       </div>
 
@@ -77,6 +78,7 @@ export default async function SiteFooter() {
             <Link href="/terms" className="hover:text-paper-300">Terms</Link>
             <Link href="/privacy" className="hover:text-paper-300">Privacy</Link>
             <Link href="/listing-policy" className="hover:text-paper-300">Listing policy</Link>
+            <Link href="/review-policy" className="hover:text-paper-300">Reviews</Link>
             <Link href="/remove-my-listing" className="hover:text-paper-300">Remove my listing</Link>
           </div>
         </div>
