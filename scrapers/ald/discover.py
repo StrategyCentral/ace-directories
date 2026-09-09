@@ -175,10 +175,17 @@ def page_digits(html):
     return re.sub(r"\D", "", text)
 
 
-def verify(html, listing):
+# A search result can be a government or university legal service that mentions
+# the right words in the right suburb. Those are never a private firm's listing.
+BAD_TLDS = (".gov.au", ".edu.au", ".org.au/legalaid", ".gov", ".edu")
+
+
+def verify(html, listing, host=""):
     """Is this page really the firm's? Returns (ok, why)."""
     if not html or len(html) < 400:
         return False, "empty"
+    if host and any(host.endswith(t) or t in host for t in BAD_TLDS):
+        return False, "institutional"
     low = html.lower()
     if any(p in low[:2000] for p in ("domain is for sale", "buy this domain",
                                      "domain for sale", "parked domain")):
@@ -272,27 +279,28 @@ def best_email(pool, host):
 # can't be guessed from their name. Kept deliberately slow and single-threaded:
 # the point is to be a negligible load on the engine, not to go fast.
 
-AGGREGATORS = (
-    "yellowpages", "truelocal", "localsearch", "localitybiz", "lawchoice",
-    "facebook.", "linkedin.", "instagram.", "twitter.", "x.com", "youtube.",
-    "google.", "bing.", "duckduckgo.", "yelp.", "hotfrog", "aussieweb",
-    "startlocal", "cylex", "purelocal", "wikipedia.", "abr.business.gov.au",
-    "aussielawyerdirectory", "findalawyer", "lawyerlist", "lawsociety",
-    "gumtree", "seek.com", "indeed.", "glassdoor", "crunchbase", "zoominfo",
-    "apple.com", "archive.org", "reddit.", "tripadvisor", "whitepages",
-)
-
-BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+SEARCH_URL = os.environ.get("ALD_SEARCH_URL",
+                            "https://aussielawyerdirectory.com.au/api/search")
+SEARCH_TOKEN = os.environ.get("ALD_SEARCH_TOKEN")
 
 _search_lock = threading.Lock()
 _last_search = [0.0]
-SEARCH_INTERVAL = 2.2   # seconds between queries, globally
-DEEP_SEARCH = False      # second pass searching the phone number
+# Our own SearXNG instance, so this is only about being decent to the upstream
+# engines it queries on our behalf — not about dodging a rate limiter.
+SEARCH_INTERVAL = 0.8
 
 
 def ddg(query, retries=2):
-    """One search. Returns candidate root domains, aggregators removed."""
+    """One search through our private SearXNG instance.
+
+    Replaces the old DuckDuckGo HTML scrape, which returned exactly the right
+    results and then blocked this IP after about fifty queries. SearXNG spreads
+    each query across many upstream engines from Railway, so it sustains the
+    full 5,929-firm run.
+    """
+    if not SEARCH_TOKEN:
+        return []
+
     for attempt in range(retries + 1):
         with _search_lock:
             wait = SEARCH_INTERVAL - (time.time() - _last_search[0])
@@ -300,33 +308,23 @@ def ddg(query, retries=2):
                 time.sleep(wait)
             _last_search[0] = time.time()
 
-        url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote_plus(query)
+        url = f"{SEARCH_URL}?q={urllib.parse.quote_plus(query)}"
         req = urllib.request.Request(url, headers={
-            "User-Agent": BROWSER_UA,
-            "Accept": "text/html,application/xhtml+xml",
-            "Accept-Language": "en-AU,en;q=0.9",
+            "Authorization": f"Bearer {SEARCH_TOKEN}",
+            "Accept": "application/json",
         })
         try:
-            html = urllib.request.urlopen(req, timeout=20).read().decode("utf-8", "replace")
+            data = json.loads(urllib.request.urlopen(req, timeout=30).read())
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                raise SystemExit("ALD_SEARCH_TOKEN rejected — check CRON_SECRET")
+            time.sleep(3 * (attempt + 1))
+            continue
         except Exception:
-            time.sleep(4 * (attempt + 1))
+            time.sleep(3 * (attempt + 1))
             continue
 
-        if "anomaly" in html[:4000].lower() or len(html) < 2000:
-            # Being asked to slow down. Back off hard rather than push through.
-            time.sleep(25 * (attempt + 1))
-            continue
-
-        out = []
-        for enc in re.findall(r"uddg=([^&\"']+)", html):
-            link = urllib.parse.unquote(enc)
-            host = urllib.parse.urlparse(link).netloc.lower()
-            if not host or any(a in host for a in AGGREGATORS):
-                continue
-            root = "https://" + host
-            if root not in out:
-                out.append(root)
-        return out[:3]
+        return [s["url"] for s in data.get("sites", [])][:4]
     return []
 
 
@@ -351,13 +349,13 @@ def process_search(listing, deep=True):
                 html, final = fetch(root)
                 if not html:
                     continue
-                ok, why = verify(html, listing)
+                host = urllib.parse.urlparse(final).netloc.lower()
+                ok, why = verify(html, listing, host)
                 if not ok:
                     if out["status"] == "no-website":
                         out["status"] = "unverified"
                     continue
 
-                host = urllib.parse.urlparse(final).netloc.lower()
                 out.update(website=f"https://{host}", status="found", why=f"search/{why}")
 
                 pool = emails_from(html)
@@ -401,13 +399,13 @@ def process(listing, deep=True, mode="both"):
             if not html:
                 continue
 
-            ok, why = verify(html, listing)
+            host = urllib.parse.urlparse(final).netloc.lower()
+            ok, why = verify(html, listing, host)
             if not ok:
                 if out["status"] == "no-website":
                     out["status"] = "unverified"
                 continue
 
-            host = urllib.parse.urlparse(final).netloc.lower()
             out.update(website=f"https://{host}", status="found", why=why)
 
             pool = emails_from(html)

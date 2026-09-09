@@ -1,0 +1,39 @@
+# Inherit upstream defaults, override only what we need.
+use_default_settings: true
+
+general:
+  instance_name: "ALD Discovery"
+  # No public instance, so no need to advertise anything.
+  enable_metrics: false
+
+server:
+  # Replaced at boot by the official entrypoint using $SEARXNG_SECRET.
+  secret_key: "ultrasecretkey"
+  # The rate limiter exists to protect public instances from abuse. This one is
+  # unreachable from the internet and has exactly one caller, so it only gets in
+  # the way.
+  limiter: false
+  public_instance: false
+  image_proxy: false
+  method: "GET"
+
+search:
+  # The whole point: JSON is off by default and is what makes this usable
+  # as an API rather than a website.
+  formats:
+    - html
+    - json
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en-AU"
+
+outgoing:
+  request_timeout: 8.0
+  max_request_timeout: 12.0
+  pool_connections: 100
+  pool_maxsize: 20
+  # Spread queries so no single upstream engine sees them all.
+  enable_http2: true
+
+ui:
+  default_locale: "en"
