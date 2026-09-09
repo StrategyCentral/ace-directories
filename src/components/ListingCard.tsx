@@ -3,6 +3,7 @@ import type { Listing } from "@/lib/types";
 import { isPaid } from "@/lib/types";
 import { areaLabel, cx, initials, telHref } from "@/lib/format";
 import TierBadge from "./TierBadge";
+import { TrackedLink, TrackedPhone } from "./Track";
 
 export default function ListingCard({
   listing,
@@ -80,15 +81,21 @@ export default function ListingCard({
 
         <div className="flex items-center gap-4 mt-3.5 flex-wrap">
           {listing.phone && (
-            <a href={telHref(listing.phone)} className="text-[13px] text-paper-200 hover:text-brand-400 transition-colors tabular">
-              {listing.phone}
-            </a>
+            <TrackedPhone
+              listingId={listing.id}
+              phone={listing.phone}
+              href={telHref(listing.phone)!}
+              className="text-[13px] text-paper-200 hover:text-brand-400 transition-colors tabular"
+            />
           )}
           {paid && listing.website && (
-            <a href={listing.website} target="_blank" rel="noopener noreferrer"
-               className="text-[12.5px] text-brand-400 hover:text-brand-200">
+            <TrackedLink
+              listingId={listing.id}
+              href={listing.website}
+              className="text-[12.5px] text-brand-400 hover:text-brand-200"
+            >
               Website ↗
-            </a>
+            </TrackedLink>
           )}
           <Link href={`/firm/${listing.slug}`} className="text-[12.5px] text-paper-500 hover:text-paper-200 ml-auto">
             View profile →

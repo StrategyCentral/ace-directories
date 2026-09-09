@@ -175,6 +175,96 @@ export function claimCompletedEmail(opts: {
   };
 }
 
+/**
+ * The stat block that does the selling: a firm's own traffic, rendered as the
+ * dashboard tiles they'd see after signing up. Tables and inline styles only —
+ * Outlook and Gmail ignore almost everything else.
+ */
+function statCard(stats: {
+  views30: number;
+  calls30: number;
+  views90: number;
+  enquiries30: number;
+}) {
+  const tile = (value: number, label: string, accent = false) => `
+    <td width="25%" align="center" style="padding:14px 6px;">
+      <div style="font-size:26px;font-weight:700;color:${accent ? "#b0872a" : "#0b1220"};line-height:1.1;">
+        ${value.toLocaleString("en-AU")}
+      </div>
+      <div style="font-size:10.5px;color:#697586;margin-top:4px;letter-spacing:.04em;">${label}</div>
+    </td>`;
+
+  return `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+         style="border:1px solid #e3e8ef;border-radius:12px;background:#f8fafc;margin:22px 0;">
+    <tr><td style="padding:12px 16px 0;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#697586;">
+      Your listing · last 30 days
+    </td></tr>
+    <tr><td>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        ${tile(stats.views30, "Profile views")}
+        ${tile(stats.calls30, "Phone taps", true)}
+        ${tile(stats.enquiries30, "Enquiries", true)}
+        ${tile(stats.views90, "Views (90d)")}
+      </tr></table>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Cold outreach to an unclaimed listing. Leads with the firm's real numbers
+ * rather than a pitch — people ignore "claim your listing", they don't ignore
+ * "six people tapped your number and you never saw it".
+ */
+export function outreachEmail(opts: {
+  firstName?: string | null;
+  firmName: string;
+  slug: string;
+  suburb: string | null;
+  state: string | null;
+  practiceLabel: string;
+  stats: { views30: number; calls30: number; views90: number; enquiries30: number };
+}) {
+  const where = [opts.suburb, opts.state].filter(Boolean).join(", ");
+  const url = `${SITE.url}/firm/${opts.slug}`;
+  const claim = `${SITE.url}/claim/${opts.slug}`;
+  const busy = opts.stats.views30 > 0 || opts.stats.calls30 > 0;
+  const greeting = opts.firstName ? `Hi ${opts.firstName},` : "Hi there,";
+
+  return {
+    subject: busy
+      ? `${opts.stats.views30} people looked up ${opts.firmName} this month`
+      : `${opts.firmName} is listed on Aussie Lawyer Directory — is this you?`,
+    html: shell(
+      `<p>${greeting}</p>
+       <p>${opts.firmName} has a listing on the Aussie Lawyer Directory. We built it from
+       public records, so nobody at the firm has ever logged in to it.</p>
+       ${statCard(opts.stats)}
+       ${
+         busy
+           ? `<p>Those are real people searching for ${opts.practiceLabel.toLowerCase()} in
+              ${where || "your area"} who landed on your page. Right now all they can see is
+              your name and a phone number — no website link, no practice areas, and no way to
+              send you an enquiry.</p>`
+           : `<p>The page is live but nearly empty — just your name and a phone number. No
+              website link, no practice areas, no way for anyone to send you an enquiry. It
+              won't rank for much in that state.</p>`
+       }
+       <p>Claiming it takes about two minutes and puts you in control of what it says.</p>
+       ${button(claim, "Claim this listing")}
+       <p style="color:#697586;font-size:13px;">
+         Your current page: <a href="${url}" style="color:#2f63f0;">${SITE.domain}/firm/${opts.slug}</a><br>
+         Not your firm, or you'd rather not be listed?
+         <a href="${SITE.url}/remove-my-listing" style="color:#2f63f0;">Removal is free</a> and
+         takes two business days.
+       </p>`,
+      busy
+        ? `${opts.stats.views30} profile views and ${opts.stats.calls30} phone taps last month`
+        : `Your firm has an unclaimed listing on ${SITE.domain}`,
+    ),
+  };
+}
+
 export function enquiryEmail(opts: {
   firmName: string;
   name: string;

@@ -211,6 +211,44 @@ export const nearbySuburbs = cache(
   },
 );
 
+/* ------------------------------------------------------------- activity */
+
+export interface Activity {
+  views_30: number;
+  calls_30: number;
+  website_30: number;
+  enquiries_30: number;
+  views_90: number;
+  calls_90: number;
+  first_seen: string | null;
+}
+
+export async function getListingActivity(listingId: string): Promise<Activity> {
+  const empty: Activity = {
+    views_30: 0, calls_30: 0, website_30: 0, enquiries_30: 0,
+    views_90: 0, calls_90: 0, first_seen: null,
+  };
+  try {
+    const { data } = await db().rpc("listing_activity", { listing: listingId });
+    const row = (data as Activity[] | null)?.[0];
+    return row ? { ...empty, ...row } : empty;
+  } catch {
+    return empty;
+  }
+}
+
+export async function getListingDaily(
+  listingId: string,
+  days = 30,
+): Promise<{ day: string; views: number; calls: number }[]> {
+  try {
+    const { data } = await db().rpc("listing_daily_views", { listing: listingId, days });
+    return (data as { day: string; views: number; calls: number }[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export const getPlans = cache(async (): Promise<Plan[]> => {
   const { data } = await db().from("plans").select("*").eq("is_public", true)
     .order("sort_order", { ascending: true });

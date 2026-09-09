@@ -3,10 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/supabase";
-import { getPracticeAreas } from "@/lib/queries";
+import { getListingActivity, getListingDaily, getPracticeAreas } from "@/lib/queries";
 import type { Listing } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import ProfileEditor from "@/components/ProfileEditor";
+import ActivityPanel from "@/components/ActivityPanel";
 import TierBadge from "@/components/TierBadge";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,17 @@ export default async function DashboardPage() {
 
   const rows = (listings ?? []) as unknown as Listing[];
 
+  // One activity read per listing — firms want to see the numbers before they
+  // care about the edit form.
+  const activity = Object.fromEntries(
+    await Promise.all(
+      rows.map(async (l) => [
+        l.id,
+        { stats: await getListingActivity(l.id), daily: await getListingDaily(l.id, 30) },
+      ]),
+    ),
+  ) as Record<string, { stats: Awaited<ReturnType<typeof getListingActivity>>; daily: Awaited<ReturnType<typeof getListingDaily>> }>;
+
   return (
     <>
       <PageHeader
@@ -90,6 +102,8 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             </div>
+
+            <ActivityPanel activity={activity[l.id].stats} daily={activity[l.id].daily} />
 
             <ProfileEditor listing={l} areas={areas} />
           </section>

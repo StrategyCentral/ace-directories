@@ -8,6 +8,7 @@ import ListingCard from "@/components/ListingCard";
 import TierBadge from "@/components/TierBadge";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import ClaimBanner from "@/components/ClaimBanner";
+import TrackView, { TrackedLink, TrackedPhone } from "@/components/Track";
 import { SITE, STATES } from "@/lib/site";
 import { initials, telHref } from "@/lib/format";
 
@@ -50,6 +51,7 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
 
   return (
     <>
+      <TrackView listingId={listing.id} source="firm-profile" />
       <PageHeader
         crumbs={[
           { href: "/", label: "Home" },
@@ -69,9 +71,12 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
             <TierBadge tier={listing.tier} claimed={listing.is_claimed} />
             {where && <span className="text-[13px] text-paper-400">{where}</span>}
             {listing.phone && (
-              <a href={telHref(listing.phone)} className="text-[13px] text-brand-400 hover:text-brand-200 tabular">
-                {listing.phone}
-              </a>
+              <TrackedPhone
+                listingId={listing.id}
+                phone={listing.phone}
+                href={telHref(listing.phone)!}
+                className="text-[13px] text-brand-400 hover:text-brand-200 tabular"
+              />
             )}
           </div>
         }
@@ -139,9 +144,12 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
                   label="Phone"
                   value={
                     listing.phone ? (
-                      <a href={telHref(listing.phone)} className="text-brand-400 hover:text-brand-200 tabular">
-                        {listing.phone}
-                      </a>
+                      <TrackedPhone
+                        listingId={listing.id}
+                        phone={listing.phone}
+                        href={telHref(listing.phone)!}
+                        className="text-brand-400 hover:text-brand-200 tabular"
+                      />
                     ) : "—"
                   }
                 />
@@ -149,10 +157,13 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
                   label="Website"
                   value={
                     paid && listing.website ? (
-                      <a href={listing.website} target="_blank" rel="noopener noreferrer"
-                         className="text-brand-400 hover:text-brand-200 break-all">
+                      <TrackedLink
+                        listingId={listing.id}
+                        href={listing.website}
+                        className="text-brand-400 hover:text-brand-200 break-all"
+                      >
                         {listing.website}
-                      </a>
+                      </TrackedLink>
                     ) : (
                       <Locked slug={listing.slug} />
                     )
@@ -202,9 +213,14 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
               <div className="surface rounded-[var(--radius-card)] p-5">
                 <p className="eyebrow mb-3">Contact this firm</p>
                 {listing.phone ? (
-                  <a href={telHref(listing.phone)} className="btn btn-primary w-full !text-[14px]">
+                  <TrackedPhone
+                    listingId={listing.id}
+                    phone={listing.phone}
+                    href={telHref(listing.phone)!}
+                    className="btn btn-primary w-full !text-[14px]"
+                  >
                     Call {listing.phone}
-                  </a>
+                  </TrackedPhone>
                 ) : (
                   <p className="text-[13px] text-paper-500">No phone number on file.</p>
                 )}
