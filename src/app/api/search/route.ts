@@ -25,6 +25,9 @@ const AGGREGATORS = [
   "pinkpages", "lawyersin.", "wordofmouth", "yellowpages.com.au", "localsearch.",
   "australianlawyers", "onlylawyers", "lawtap", "oneflare", "airtasker",
   "trustpilot", "productreview", "threebestrated", "cybo.com", "brownbook",
+  "bestlawyers.com", "dlook.com", "gotocourt", "dailymail", "news.com.au",
+  "smh.com.au", "theage.com.au", "abc.net.au", "couriermail", "heraldsun",
+  "justlanded", "startupsmart", "bizapedia", "opencorporates", "dnb.com",
 ];
 
 export async function GET(req: Request) {
@@ -47,8 +50,12 @@ export async function GET(req: Request) {
   target.searchParams.set("q", q);
   target.searchParams.set("format", "json");
   target.searchParams.set("language", "en-AU");
-  const engines = url.searchParams.get("engines");
-  if (engines) target.searchParams.set("engines", engines);
+  // Most engines refuse traffic from datacenter IPs, so a self-hosted SearXNG on
+  // Railway gets zero results from Google, DuckDuckGo, Brave, Startpage, Qwant
+  // and Mojeek. Bing and Yahoo still answer, and between them they index
+  // Australian business sites well enough for this job. Measured, not assumed.
+  const engines = url.searchParams.get("engines") ?? "bing,yahoo";
+  target.searchParams.set("engines", engines);
 
   try {
     const res = await fetch(target, {

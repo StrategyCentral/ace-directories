@@ -351,6 +351,19 @@ def process_search(listing, deep=True):
                     continue
                 host = urllib.parse.urlparse(final).netloc.lower()
                 ok, why = verify(html, listing, host)
+
+                # Search mode accepts a phone match and nothing else.
+                #
+                # In guess mode a name+suburb match is meaningful, because the
+                # domain was derived from the firm's own name — the match
+                # confirms a strong prior. A search result carries no such
+                # prior: any large site that happens to mention the name and
+                # the suburb will pass, which in testing meant dailymail.com
+                # matched a solicitor called A S Brown. The phone number is the
+                # only signal strong enough to stand on its own here.
+                if ok and why != "phone":
+                    ok, why = False, "weak-match"
+
                 if not ok:
                     if out["status"] == "no-website":
                         out["status"] = "unverified"
