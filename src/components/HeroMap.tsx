@@ -196,9 +196,9 @@ function Scene({ points }: { points: [number, number][] }) {
   // Sit the continent in the right-hand third so the headline keeps the left.
   // Scale from the viewport height so the whole country always fits the frame.
   const wide = viewport.width >= 11;
-  const scale = Math.min(0.78, (viewport.height * 0.86) / HEIGHT);
-  const offsetX = wide ? viewport.width * 0.13 : 0;
-  const offsetY = wide ? 0.2 : 1.4;
+  const scale = Math.min(0.7, (viewport.height * 0.8) / HEIGHT);
+  const offsetX = wide ? viewport.width * 0.11 : 0;
+  const offsetY = wide ? -0.25 : 1.2;
 
   return (
     <group ref={group} position={[offsetX, offsetY, 0]} rotation={[-0.34, 0, 0]} scale={scale}>
