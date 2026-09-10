@@ -113,7 +113,7 @@ export default function ClaimFinder() {
                   New practices start on a paid plan — there&apos;s no free signup, which is how
                   we keep the directory free of ghost listings.
                 </p>
-                <Link href="/list-your-firm" className="btn btn-primary mt-4 !text-[13px]">
+                <Link href="/list-your-firm" className="btn btn-gold mt-4 !text-[13px]">
                   List your firm →
                 </Link>
               </div>

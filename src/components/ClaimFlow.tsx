@@ -17,9 +17,11 @@ interface ListingLite {
 interface ExistingClaim {
   id: string;
   status: string;
-  expires_at: string;
+  /** Null until the claim is verified — that is when the clock starts. */
+  expires_at: string | null;
   email: string;
   selected_plan: string | null;
+  verification_level?: string;
 }
 
 export default function ClaimFlow({
@@ -31,7 +33,10 @@ export default function ClaimFlow({
   plans: Plan[];
   existingClaim: ExistingClaim | null;
 }) {
-  const [step, setStep] = useState<1 | 2>(existingClaim ? 2 : 1);
+  const [step, setStep] = useState<1 | 2 | "sent">(
+    existingClaim ? (existingClaim.expires_at ? 2 : "sent") : 1,
+  );
+  const [level, setLevel] = useState<string>("manual");
   const [claimId, setClaimId] = useState<string | null>(existingClaim?.id ?? null);
   const [yearly, setYearly] = useState(true);
   const [plan, setPlan] = useState<string>(existingClaim?.selected_plan ?? "featured");
@@ -58,7 +63,8 @@ export default function ClaimFlow({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Could not start the claim");
       setClaimId(json.claim_id);
-      setStep(2);
+      setLevel(json.verification_level ?? "manual");
+      setStep(json.needs_verification === false ? 2 : "sent");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -95,7 +101,35 @@ export default function ClaimFlow({
       <Steps step={step} />
 
       <AnimatePresence mode="wait">
-        {step === 1 ? (
+        {step === "sent" ? (
+          <motion.div
+            key="sent"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="surface rounded-2xl p-6 md:p-8"
+          >
+            <h2 className="text-[17px] font-medium">Check your inbox</h2>
+            <p className="text-[13.5px] leading-relaxed text-paper-400 mt-3 max-w-[560px]">
+              We&apos;ve sent a confirmation link. Click it and you&apos;ll come straight back
+              here to choose a plan.
+            </p>
+            {level === "domain" ? (
+              <p className="text-[13px] leading-relaxed text-paper-500 mt-4">
+                Your email matches {listing.name}&apos;s own domain, so the listing is yours to
+                take as soon as you confirm.
+              </p>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-paper-500 mt-4">
+                That address isn&apos;t at the firm&apos;s own domain, so we&apos;ll do a quick
+                manual check before handing over the page — usually within a business day.
+                Nothing on the listing changes in the meantime.
+              </p>
+            )}
+            <p className="text-[12px] text-paper-600 mt-5">
+              Nothing happens to the listing until someone confirms an email address.
+            </p>
+          </motion.div>
+        ) : step === 1 ? (
           <motion.form
             key="s1"
             onSubmit={startClaim}
@@ -107,8 +141,8 @@ export default function ClaimFlow({
             <div>
               <h2 className="text-[17px] font-medium">Confirm you act for this firm</h2>
               <p className="text-[13px] leading-relaxed text-paper-500 mt-2 max-w-[520px]">
-                Use your work email — we verify against the firm&apos;s domain where we can, and
-                a partner or practice manager may be contacted to confirm.
+                Use your work email. We&apos;ll send a link to confirm it&apos;s yours — that
+                check is what stops anyone but your firm taking control of this page.
               </p>
             </div>
 
@@ -121,16 +155,13 @@ export default function ClaimFlow({
 
             <label className="flex items-start gap-3 text-[12.5px] text-paper-500 pt-1">
               <input type="checkbox" required className="mt-0.5 accent-[var(--color-brand-500)]" />
-              <span>
-                I am authorised to manage {listing.name}&apos;s public listing, and I understand
-                the claim must be completed within 72 hours or the listing is removed.
-              </span>
+              <span>I am authorised to manage {listing.name}&apos;s public listing.</span>
             </label>
 
             {error && <p className="text-[12.5px] text-red-400">{error}</p>}
 
             <button disabled={busy} className="btn btn-gold w-full disabled:opacity-60">
-              {busy ? "Starting…" : "Start my claim"}
+              {busy ? "Sending…" : "Email me a confirmation link"}
             </button>
           </motion.form>
         ) : (
@@ -146,7 +177,8 @@ export default function ClaimFlow({
                 <div>
                   <h2 className="text-[17px] font-medium">Choose your plan</h2>
                   <p className="text-[13px] text-paper-500 mt-2">
-                    Cancel any time. Your profile goes live the moment payment clears.
+                    Cancel any time. Your profile goes live the moment payment clears, and the
+                    listing is held for you for 72 hours while you decide.
                   </p>
                 </div>
                 <button
@@ -221,7 +253,7 @@ export default function ClaimFlow({
 
               {error && <p className="text-[12.5px] text-red-400 mt-4">{error}</p>}
 
-              <button onClick={checkout} disabled={busy} className="btn btn-primary w-full mt-6 disabled:opacity-60">
+              <button onClick={checkout} disabled={busy} className="btn btn-gold w-full mt-6 disabled:opacity-60">
                 {busy ? "Opening checkout…" : "Continue to secure checkout"}
               </button>
               <p className="text-[11.5px] text-paper-600 mt-3 text-center">
@@ -235,14 +267,17 @@ export default function ClaimFlow({
   );
 }
 
-function Steps({ step }: { step: 1 | 2 }) {
+function Steps({ step }: { step: 1 | 2 | "sent" }) {
   const labels = ["Verify you're the firm", "Choose a plan"];
+  // The emailed-link stage sits between the two: step one is done, step two
+  // isn't reachable until they click through.
+  const current = step === "sent" ? 1.5 : step;
   return (
     <ol className="flex gap-2">
       {labels.map((l, i) => {
         const n = (i + 1) as 1 | 2;
-        const active = step === n;
-        const done = step > n;
+        const active = current === n;
+        const done = current > n;
         return (
           <li
             key={l}

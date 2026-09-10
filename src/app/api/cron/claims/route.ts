@@ -13,6 +13,11 @@ export const dynamic = "force-dynamic";
  * cadence never double-sends.
  */
 const OPEN = ["started", "verifying", "awaiting_payment"];
+// A claim can only put a listing at risk if the claimant proved control of an
+// inbox at the firm's own domain. Everything else has no clock and is never
+// removed — otherwise a stranger with a throwaway address could delete any
+// firm in the directory.
+const CAN_EXPIRE_LISTING = "domain";
 const REMINDER_GAP_MS = 20 * 3_600_000;
 
 export async function GET(req: Request) {
@@ -25,11 +30,11 @@ export async function GET(req: Request) {
 
   const supabase = db();
   const now = new Date();
-  const result = { expired: 0, reminded: 0, errors: [] as string[] };
+  const result = { expired: 0, released: 0, waiting: 0, reminded: 0, errors: [] as string[] };
 
   const { data: claims, error } = await supabase
     .from("claims")
-    .select("id,listing_id,email,full_name,status,expires_at,emails_sent,last_email_at")
+    .select("id,listing_id,email,full_name,status,expires_at,emails_sent,last_email_at,verification_level")
     .in("status", OPEN);
 
   if (error) {
@@ -53,6 +58,14 @@ export async function GET(req: Request) {
     }
 
     const firstName = (claim.full_name ?? "there").split(/\s+/)[0];
+
+    // No clock set means the claim is unverified or in manual review. Those sit
+    // harmlessly until a human deals with them.
+    if (!claim.expires_at) {
+      result.waiting++;
+      continue;
+    }
+
     const expired = new Date(claim.expires_at).getTime() <= now.getTime();
 
     if (expired) {
@@ -60,9 +73,15 @@ export async function GET(req: Request) {
         .update({ status: "expired", expired_at: now.toISOString() })
         .eq("id", claim.id);
 
-      // Soft removal: the row survives so the claim can be reinstated by hand,
-      // but the page 404s and drops out of the sitemap and every listing query.
-      await supabase.from("lawyers").update({ status: "removed" }).eq("id", listing.id);
+      if (claim.verification_level === CAN_EXPIRE_LISTING) {
+        // Soft removal: the row survives so the claim can be reinstated by hand,
+        // but the page 404s and drops out of the sitemap and every listing query.
+        await supabase.from("lawyers").update({ status: "removed" }).eq("id", listing.id);
+      } else {
+        // Reservation lapses, listing stays exactly as it was.
+        result.released++;
+        continue;
+      }
 
       const mail = claimExpiredEmail({ firstName, firmName: listing.full_name });
       const sent = await send({

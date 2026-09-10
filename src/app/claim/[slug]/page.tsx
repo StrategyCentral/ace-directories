@@ -25,15 +25,14 @@ export async function generateMetadata({
 async function activeClaim(listingId: string) {
   const { data } = await db()
     .from("claims")
-    .select("id,status,expires_at,email,selected_plan,emails_sent")
+    .select("id,status,expires_at,email,selected_plan,emails_sent,verification_level")
     .eq("listing_id", listingId)
-    .in("status", ["started", "verifying", "awaiting_payment"])
-    .gt("expires_at", new Date().toISOString())
+    .in("status", ["started", "verifying", "awaiting_payment", "manual_review"])
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   return data as
-    | { id: string; status: string; expires_at: string; email: string; selected_plan: string | null; emails_sent: number }
+    | { id: string; status: string; expires_at: string | null; email: string; selected_plan: string | null; emails_sent: number; verification_level: string }
     | null;
 }
 
@@ -87,29 +86,36 @@ export default async function ClaimListingPage({
         />
 
         <aside className="lg:sticky lg:top-24 space-y-4">
-          {claim ? (
+          {claim && claim.expires_at ? (
             <div className="surface rounded-2xl p-6 border-gold-500/25">
-              <p className="eyebrow text-gold-400">Claim in progress</p>
+              <p className="eyebrow text-gold-400">Reserved for you</p>
               <p className="text-[13px] leading-relaxed text-paper-400 mt-3">
-                Reserved for {claim.email}. Finish before the clock runs out or the listing is
-                removed from the directory.
+                Held for {claim.email} while you choose a plan. We&apos;ll email you once a day
+                so it can&apos;t lapse by accident.
               </p>
               <div className="mt-5">
                 <Countdown expiresAt={claim.expires_at} />
               </div>
             </div>
+          ) : claim ? (
+            <div className="surface rounded-2xl p-6">
+              <p className="eyebrow">Awaiting confirmation</p>
+              <p className="text-[13px] leading-relaxed text-paper-400 mt-3">
+                We&apos;ve emailed {claim.email} a confirmation link. Nothing on this listing
+                changes until someone clicks it.
+              </p>
+            </div>
           ) : (
             <div className="surface rounded-2xl p-6">
-              <p className="eyebrow">Before you start</p>
+              <p className="eyebrow">How this works</p>
               <p className="text-[13px] leading-relaxed text-paper-400 mt-3">
-                Starting a claim reserves this listing for{" "}
-                <strong className="text-paper-200">{CLAIM_WINDOW_HOURS} hours</strong>. If it
-                isn&apos;t completed in that window the reservation lapses and the unclaimed
-                listing is removed from the directory.
+                We email you a link to confirm the address is yours. That check is what stops
+                anyone but your firm taking control of this page.
               </p>
               <p className="text-[12px] leading-relaxed text-paper-600 mt-4">
-                We&apos;ll email you once a day while the clock is running so it can&apos;t
-                lapse by accident.
+                Once confirmed, the listing is held for you for{" "}
+                <strong className="text-paper-400">{CLAIM_WINDOW_HOURS} hours</strong> while you
+                pick a plan.
               </p>
             </div>
           )}

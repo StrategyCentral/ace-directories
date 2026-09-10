@@ -109,6 +109,36 @@ export function claimStartedEmail(opts: {
   };
 }
 
+export function claimVerifyEmail(opts: {
+  firstName: string;
+  firmName: string;
+  token: string;
+  domainMatch: boolean;
+}) {
+  const url = `${SITE.url}/api/claims/verify?token=${encodeURIComponent(opts.token)}`;
+  return {
+    subject: `Confirm your claim on ${opts.firmName}`,
+    html: shell(
+      `<p>Hi ${opts.firstName},</p>
+       <p>You've asked to take control of the <strong>${opts.firmName}</strong> listing on the
+       Aussie Lawyer Directory. Confirm this address is yours and we'll open the claim.</p>
+       ${button(url, "Confirm and continue")}
+       ${
+         opts.domainMatch
+           ? `<p style="color:#697586;font-size:13px;">Once confirmed you'll go straight to
+              choosing a plan, and the listing is reserved for you while you do.</p>`
+           : `<p style="color:#697586;font-size:13px;">Because this isn't an email address at the
+              firm's own domain, we'll do a quick manual check before handing over the listing —
+              usually within a business day. Nothing changes on the page in the meantime.</p>`
+       }
+       <p style="color:#697586;font-size:13px;">Didn't request this? Ignore this email. Nothing
+       happens to the listing without someone confirming an address, and we never remove a
+       listing because a stranger clicked something.</p>`,
+      `Confirm your claim on ${opts.firmName}`,
+    ),
+  };
+}
+
 export function claimReminderEmail(opts: {
   firstName: string;
   firmName: string;

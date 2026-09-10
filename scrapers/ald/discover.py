@@ -61,13 +61,19 @@ def sql(query):
         headers={"Authorization": f"Bearer {SB_TOKEN}", "Content-Type": "application/json",
                  "User-Agent": "curl/8.7.1"},
         method="POST")
-    for attempt in range(3):
+    # Supabase throws the occasional transient 502 on long runs. Losing an hour
+    # of crawling to a blip that clears in ten seconds is not worth it.
+    for attempt in range(6):
         try:
             return json.loads(urllib.request.urlopen(req, timeout=180).read())
         except urllib.error.HTTPError as e:
-            if attempt == 2:
+            if attempt == 5:
                 raise SystemExit(f"SQL failed: {e.code} {e.read().decode()[:300]}")
-            time.sleep(2)
+            time.sleep(min(30, 3 * (attempt + 1)))
+        except Exception:
+            if attempt == 5:
+                raise
+            time.sleep(min(30, 3 * (attempt + 1)))
 
 
 def q(v):

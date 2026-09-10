@@ -1,15 +1,29 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/supabase";
-import { claimStartedEmail, send } from "@/lib/email";
-import { CLAIM_WINDOW_HOURS } from "@/lib/site";
+import { claimVerifyEmail, send } from "@/lib/email";
 
 export const runtime = "nodejs";
 
 const FREE_MAIL = new Set([
-  "gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.au",
-  "bigpond.com", "icloud.com", "live.com", "me.com", "optusnet.com.au",
+  "gmail.com", "hotmail.com", "hotmail.com.au", "outlook.com", "outlook.com.au",
+  "yahoo.com", "yahoo.com.au", "bigpond.com", "bigpond.net.au", "icloud.com",
+  "live.com", "live.com.au", "me.com", "optusnet.com.au", "iinet.net.au",
+  "tpg.com.au", "aol.com", "proton.me", "protonmail.com", "gmx.com",
 ]);
+
+/** Max claims we'll accept from one IP in 24h — blunt, but stops mass abuse. */
+const IP_LIMIT = 5;
+
+const hostOf = (url: string | null) => {
+  if (!url) return null;
+  try {
+    return new URL(url.startsWith("http") ? url : `https://${url}`)
+      .hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+};
 
 export async function POST(req: Request) {
   let body: Record<string, unknown>;
@@ -31,10 +45,21 @@ export async function POST(req: Request) {
   }
 
   const supabase = db();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+
+  if (ip) {
+    const { data: recent } = await supabase.rpc("claims_from_ip", { addr: ip, window_hours: 24 });
+    if (Number(recent ?? 0) >= IP_LIMIT) {
+      return NextResponse.json(
+        { error: "Too many claims from this connection today. Contact us and we'll sort it out." },
+        { status: 429 },
+      );
+    }
+  }
 
   const { data: listing } = await supabase
     .from("lawyers")
-    .select("id,slug,full_name,is_claimed,status,suburb,state")
+    .select("id,slug,full_name,is_claimed,status,suburb,state,website,email")
     .eq("id", listingId)
     .maybeSingle();
 
@@ -45,27 +70,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This listing has already been claimed" }, { status: 409 });
   }
 
-  // Someone else may already hold the reservation.
-  const { data: open } = await supabase
+  // A listing is only reserved by a *verified* claim. An unverified submission
+  // reserves nothing, so a stranger can't lock the real firm out of its page.
+  const { data: reserved } = await supabase.rpc("listing_is_reserved", { target: listingId });
+  if (reserved) {
+    const { data: holder } = await supabase
+      .from("claims").select("email").eq("listing_id", listingId)
+      .not("verified_at", "is", null)
+      .in("status", ["verifying", "awaiting_payment"]).maybeSingle();
+    if (holder && holder.email !== email) {
+      return NextResponse.json(
+        { error: "Someone at this firm has already verified a claim. Contact us if that wasn't authorised." },
+        { status: 409 },
+      );
+    }
+  }
+
+  // Resume rather than duplicate if this person already started one.
+  const { data: mine } = await supabase
     .from("claims")
-    .select("id,email,expires_at")
+    .select("id,status,expires_at,verify_token")
     .eq("listing_id", listingId)
-    .in("status", ["started", "verifying", "awaiting_payment"])
-    .gt("expires_at", new Date().toISOString())
+    .eq("email", email)
+    .in("status", ["verifying", "awaiting_payment"])
     .maybeSingle();
-
-  if (open && open.email !== email) {
-    return NextResponse.json(
-      { error: "Someone from this firm has already started a claim. Contact us if that wasn't authorised." },
-      { status: 409 },
-    );
-  }
-  if (open) {
-    return NextResponse.json({ claim_id: open.id, expires_at: open.expires_at, resumed: true });
+  if (mine) {
+    return NextResponse.json({
+      claim_id: mine.id, expires_at: mine.expires_at,
+      resumed: true, needs_verification: mine.status === "verifying",
+    });
   }
 
-  const expiresAt = new Date(Date.now() + CLAIM_WINDOW_HOURS * 3_600_000).toISOString();
+  // Does the work email belong to the firm's own domain? That, once confirmed
+  // by clicking the emailed link, is what separates the firm from an impostor —
+  // and it is the only thing that lets the clock run at all.
+  const domain = email.split("@")[1];
+  const firmHosts = [hostOf(listing.website), hostOf(listing.email ? `https://${listing.email.split("@")[1]}` : null)]
+    .filter(Boolean) as string[];
+  const domainMatch =
+    !FREE_MAIL.has(domain) &&
+    firmHosts.some((h) => h === domain || h.endsWith(`.${domain}`) || domain.endsWith(`.${h}`));
 
+  const token = randomUUID();
   const { data: claim, error } = await supabase
     .from("claims")
     .insert({
@@ -74,15 +120,16 @@ export async function POST(req: Request) {
       full_name: fullName,
       phone: String(body.phone ?? "").slice(0, 40) || null,
       role_at_firm: String(body.role_at_firm ?? "").slice(0, 120) || null,
-      status: "awaiting_payment",
-      verify_token: randomUUID(),
-      expires_at: expiresAt,
+      status: "verifying",
+      verification_level: domainMatch ? "domain" : "manual",
+      verify_token: token,
+      expires_at: null,          // the clock starts at verification, not here
       emails_sent: 1,
       last_email_at: new Date().toISOString(),
-      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      ip,
       user_agent: req.headers.get("user-agent")?.slice(0, 300) ?? null,
     })
-    .select("id,expires_at")
+    .select("id")
     .single();
 
   if (error || !claim) {
@@ -90,29 +137,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Could not start the claim — please try again" }, { status: 500 });
   }
 
-  // The listing stays `live` while a claim runs — pulling it from search would
-  // cost rankings for a claim that may never complete. The claim row is the
-  // record that a reservation is in force.
-  const domain = email.split("@")[1];
-  const firstName = fullName.split(/\s+/)[0];
-  const mail = claimStartedEmail({
-    firstName,
+  const mail = claimVerifyEmail({
+    firstName: fullName.split(/\s+/)[0],
     firmName: listing.full_name,
-    slug: listing.slug,
-    expiresAt: claim.expires_at,
+    token,
+    domainMatch,
   });
   await send({
-    to: email,
-    subject: mail.subject,
-    html: mail.html,
-    template: "claim-started",
-    listingId,
-    claimId: claim.id,
+    to: email, subject: mail.subject, html: mail.html,
+    template: "claim-verify", listingId, claimId: claim.id,
   });
 
   return NextResponse.json({
     claim_id: claim.id,
-    expires_at: claim.expires_at,
-    work_email: !FREE_MAIL.has(domain),
+    needs_verification: true,
+    verification_level: domainMatch ? "domain" : "manual",
   });
 }
