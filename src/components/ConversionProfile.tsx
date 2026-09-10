@@ -168,7 +168,7 @@ export default function ConversionProfile({ listing }: { listing: Listing }) {
       )}
 
       {/* -------------------------------------------------------- the ask */}
-      <section className="surface rounded-2xl p-6 md:p-8 border-gold-500/25 bg-gradient-to-br from-gold-500/[0.05] to-transparent">
+      <section className="surface rounded-2xl p-6 md:p-8 border-brand-500/25 bg-gradient-to-br from-brand-500/[0.06] to-transparent">
         <h3 className="text-[16px] font-medium">
           {x.free_consult
             ? `Talk to ${listing.full_name} at no cost`
@@ -185,7 +185,7 @@ export default function ConversionProfile({ listing }: { listing: Listing }) {
               listingId={listing.id}
               phone={listing.phone}
               href={telHref(listing.phone)!}
-              className="btn btn-gold"
+              className="btn btn-primary"
             >
               Call {listing.phone}
             </TrackedPhone>

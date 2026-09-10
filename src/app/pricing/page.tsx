@@ -98,7 +98,7 @@ export default async function PricingPage() {
         </div>
 
         <div className="mt-12 flex flex-wrap gap-3">
-          <Link href="/claim" className="btn btn-gold">Find &amp; claim your listing</Link>
+          <Link href="/claim" className="btn btn-primary">Find &amp; claim your listing</Link>
           <Link href="/list-your-firm" className="btn btn-ghost">List a new firm</Link>
         </div>
       </section>

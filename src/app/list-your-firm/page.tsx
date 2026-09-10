@@ -25,7 +25,7 @@ export default async function ListYourFirmPage() {
         intro={`Someone searching “family lawyer Richmond” has a matter today. We put ${stats.listings.toLocaleString("en-AU")} practices in front of that search across ${stats.suburbs.toLocaleString("en-AU")} suburbs — and unlike an ad, the page keeps working after you stop paying attention to it.`}
       >
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/claim" className="btn btn-gold">Already listed? Claim it</Link>
+          <Link href="/claim" className="btn btn-primary">Already listed? Claim it</Link>
           <Link href="#plans" className="btn btn-ghost">See plans</Link>
         </div>
       </PageHeader>
@@ -58,7 +58,7 @@ export default async function ListYourFirmPage() {
             If you genuinely aren&apos;t listed, get in touch and we&apos;ll set you up.
           </p>
           <div className="flex flex-wrap gap-3 mt-7">
-            <Link href="/claim" className="btn btn-gold">Search the directory</Link>
+            <Link href="/claim" className="btn btn-primary">Search the directory</Link>
             <Link href="/contact" className="btn btn-ghost">Contact us</Link>
           </div>
         </div>

@@ -105,7 +105,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
               <div className="flex gap-2.5 flex-wrap">
-                <Link href={`/dashboard/setup?listing=${l.id}`} className="btn btn-gold !py-2 !px-4 !text-[12.5px]">
+                <Link href={`/dashboard/setup?listing=${l.id}`} className="btn btn-primary !py-2 !px-4 !text-[12.5px]">
                   {l.profile_score < 60 ? "Build my profile" : "Improve my profile"}
                 </Link>
                 <Link href={`/firm/${l.slug}`} className="btn btn-ghost !py-2 !px-4 !text-[12.5px]">

@@ -68,7 +68,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
 
               <Link
                 href="/claim"
-                className={"btn btn-gold w-full mt-6 !text-[13px]"}
+                className={"btn btn-primary w-full mt-6 !text-[13px]"}
               >
                 Choose {p.name}
               </Link>

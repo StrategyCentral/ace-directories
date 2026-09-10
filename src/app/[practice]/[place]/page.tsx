@@ -141,7 +141,7 @@ export default async function PracticePlacePage({
               Unclaimed listings on this page show a phone number and nothing else. Claiming
               yours adds your website, practice areas and an enquiry button.
             </p>
-            <Link href="/claim" className="btn btn-gold w-full mt-4 !text-[13px]">
+            <Link href="/claim" className="btn btn-primary w-full mt-4 !text-[13px]">
               Claim your listing
             </Link>
           </div>

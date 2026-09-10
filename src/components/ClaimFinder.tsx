@@ -98,7 +98,7 @@ export default function ClaimFinder() {
                   {h.claimed ? (
                     <span className="text-[12px] text-paper-600">Already claimed</span>
                   ) : (
-                    <Link href={`/claim/${h.slug}`} className="btn btn-gold !py-2 !px-4 !text-[12.5px]">
+                    <Link href={`/claim/${h.slug}`} className="btn btn-primary !py-2 !px-4 !text-[12.5px]">
                       This is us →
                     </Link>
                   )}
@@ -113,7 +113,7 @@ export default function ClaimFinder() {
                   New practices start on a paid plan — there&apos;s no free signup, which is how
                   we keep the directory free of ghost listings.
                 </p>
-                <Link href="/list-your-firm" className="btn btn-gold mt-4 !text-[13px]">
+                <Link href="/list-your-firm" className="btn btn-primary mt-4 !text-[13px]">
                   List your firm →
                 </Link>
               </div>

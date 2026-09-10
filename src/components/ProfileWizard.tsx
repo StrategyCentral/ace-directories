@@ -91,7 +91,7 @@ export default function ProfileWizard({ listing }: { listing: Listing }) {
                 </button>
               )}
               <button onClick={() => save(true)} disabled={busy}
-                      className="btn btn-gold !text-[13px] disabled:opacity-60">
+                      className="btn btn-primary !text-[13px] disabled:opacity-60">
                 {busy ? "Saving…" : isLast ? "Save and finish" : "Save and continue"}
               </button>
               {saved && <span className="text-[12.5px] text-brand-300">{saved}</span>}

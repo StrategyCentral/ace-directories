@@ -160,7 +160,7 @@ export default function ClaimFlow({
 
             {error && <p className="text-[12.5px] text-red-400">{error}</p>}
 
-            <button disabled={busy} className="btn btn-gold w-full disabled:opacity-60">
+            <button disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
               {busy ? "Sending…" : "Email me a confirmation link"}
             </button>
           </motion.form>
@@ -253,7 +253,7 @@ export default function ClaimFlow({
 
               {error && <p className="text-[12.5px] text-red-400 mt-4">{error}</p>}
 
-              <button onClick={checkout} disabled={busy} className="btn btn-gold w-full mt-6 disabled:opacity-60">
+              <button onClick={checkout} disabled={busy} className="btn btn-primary w-full mt-6 disabled:opacity-60">
                 {busy ? "Opening checkout…" : "Continue to secure checkout"}
               </button>
               <p className="text-[11.5px] text-paper-600 mt-3 text-center">

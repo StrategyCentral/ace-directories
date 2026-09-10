@@ -73,18 +73,41 @@ export default async function ClaimListingPage({
       />
 
       <div className="mx-auto max-w-[1240px] px-5 pb-16 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
-        <ClaimFlow
-          listing={{
-            id: listing.id,
-            slug: listing.slug,
-            name: listing.full_name,
-            suburb: listing.suburb,
-            state: listing.state,
-            phone: listing.phone,
-          }}
-          plans={plans}
-          existingClaim={claim}
-        />
+        <div className="space-y-6">
+          <ClaimFlow
+            listing={{
+              id: listing.id,
+              slug: listing.slug,
+              name: listing.full_name,
+              suburb: listing.suburb,
+              state: listing.state,
+              phone: listing.phone,
+            }}
+            plans={plans}
+            existingClaim={claim}
+          />
+
+          {/* Sits under the form, across the full column, so the page doesn't
+              run on past the fold. */}
+          <div className="surface rounded-2xl p-6">
+            <p className="eyebrow mb-4">What you unlock</p>
+            <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                "Your website link (currently hidden)",
+                "Up to 8 practice areas instead of 1",
+                "Firm description, logo and photos",
+                "An enquiry form that emails you directly",
+                "Verified badge and higher placement",
+                "Client reviews on your profile",
+              ].map((f) => (
+                <li key={f} className="flex gap-2.5 text-[13px] text-paper-400">
+                  <span className="text-brand-400 shrink-0 mt-0.5" aria-hidden="true">✓</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
         <aside className="lg:sticky lg:top-24 space-y-4">
           {claim && claim.expires_at ? (
@@ -130,25 +153,6 @@ export default async function ClaimListingPage({
               </p>
             </div>
           )}
-
-          <div className="surface rounded-2xl p-6">
-            <p className="eyebrow mb-3">What you unlock</p>
-            <ul className="space-y-2 text-[13px] text-paper-400">
-              {[
-                "Your website link (currently hidden)",
-                "Up to 8 practice areas instead of 1",
-                "Firm description, logo and photos",
-                "An enquiry form that emails you directly",
-                "Verified badge and higher placement",
-                "Client reviews on your profile",
-              ].map((f) => (
-                <li key={f} className="flex gap-2.5">
-                  <span className="text-brand-400 mt-0.5">✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
 
           <p className="text-[11.5px] leading-relaxed text-paper-600">
             Rather not be listed at all?{" "}

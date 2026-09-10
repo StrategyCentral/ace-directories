@@ -49,7 +49,7 @@ export default async function ClaimDonePage({
           </ol>
 
           <div className="flex flex-wrap gap-3 mt-8">
-            <Link href="/dashboard/setup" className="btn btn-gold">Build my profile now</Link>
+            <Link href="/dashboard/setup" className="btn btn-primary">Build my profile now</Link>
             <Link href={`/firm/${listing.slug}`} className="btn btn-ghost">View my public page</Link>
           </div>
         </div>

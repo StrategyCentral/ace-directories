@@ -69,9 +69,14 @@ body {
 }
 
 .glass {
-  background: rgba(10, 14, 22, 0.72);
+  background: rgba(8, 11, 18, 0.94);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Where the blur is actually supported we can afford to be more translucent. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass { background: rgba(8, 11, 18, 0.82); }
 }
 
 .eyebrow {
@@ -156,6 +161,7 @@ body {
 .btn-primary {
   background: var(--color-brand-500);
   color: #fff;
+  font-weight: 600;
   box-shadow: 0 6px 30px -8px rgba(63, 116, 255, 0.75);
 }
 .btn-primary:hover {
@@ -171,12 +177,8 @@ body {
   border-color: rgba(63, 116, 255, 0.6);
   background: rgba(63, 116, 255, 0.08);
 }
-.btn-gold {
-  background: var(--color-gold-500);
-  color: #1a1406;
-  font-weight: 600;
-}
-.btn-gold:hover { background: var(--color-gold-400); transform: translateY(-1px); }
+/* No gold buttons. Gold is reserved for verification and paid-tier badges, so
+   it never competes with the call to action. Every button is ALD blue. */
 
 /* Countdown digits */
 .tabular { font-variant-numeric: tabular-nums; }

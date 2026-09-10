@@ -73,7 +73,7 @@ export default function HeaderNav({ areas }: { areas: PracticeArea[] }) {
             className="hidden sm:grid place-items-center size-9 rounded-full edge text-paper-300 hover:text-paper-100 hover:border-brand-500/50 transition-colors">
             <SearchIcon />
           </Link>
-          <Link href="/claim" className="btn btn-gold !px-4 !py-2 !text-[13px]">
+          <Link href="/claim" className="btn btn-primary !px-4 !py-2 !text-[13px]">
             Claim your listing
           </Link>
           <button

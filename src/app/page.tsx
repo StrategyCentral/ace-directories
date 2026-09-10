@@ -228,7 +228,7 @@ export default async function HomePage() {
                 page that actually wins you work.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/claim" className="btn btn-gold">Find &amp; claim your listing</Link>
+                <Link href="/claim" className="btn btn-primary">Find &amp; claim your listing</Link>
                 <Link href="/pricing" className="btn btn-ghost">See pricing</Link>
               </div>
               <p className="mt-5 text-[12px] text-paper-600">

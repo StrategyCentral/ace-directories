@@ -15,24 +15,24 @@ export default function ClaimBanner({
   score: number;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gold-500/25 bg-gradient-to-br
-                    from-gold-500/[0.08] via-transparent to-brand-500/[0.05] p-6 md:p-8">
+    <div className="relative overflow-hidden rounded-2xl border border-brand-500/25 bg-gradient-to-br
+                    from-brand-500/[0.08] via-transparent to-brand-500/[0.03] p-6 md:p-8">
       <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
         <div>
-          <p className="eyebrow text-gold-400">Unclaimed listing</p>
+          <p className="eyebrow text-brand-400">Unclaimed listing</p>
           <h2 className="display text-[clamp(1.4rem,2.6vw,2rem)] mt-2">
             Is this your firm?
           </h2>
           <p className="text-[13.5px] leading-relaxed text-paper-400 mt-3 max-w-[560px]">
             {name} is listed from public records, so this page is running at{" "}
-            <strong className="text-gold-300">{score}% complete</strong>. Right now anyone
+            <strong className="text-brand-200">{score}% complete</strong>. Right now anyone
             searching for you sees a phone number and nothing else — no website link, no
             practice areas, no way to enquire online.
           </p>
 
           <div className="mt-5 h-1.5 w-full max-w-[420px] rounded-full bg-white/[0.07] overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-gold-500 to-brand-500"
+              className="h-full rounded-full bg-gradient-to-r from-brand-700 to-brand-400"
               style={{ width: `${Math.max(6, score)}%` }}
             />
           </div>
@@ -51,7 +51,7 @@ export default function ClaimBanner({
         </div>
 
         <div className="shrink-0">
-          <Link href={`/claim/${slug}`} className="btn btn-gold w-full md:w-auto">
+          <Link href={`/claim/${slug}`} className="btn btn-primary w-full md:w-auto">
             Claim this listing
           </Link>
           <p className="text-[11.5px] text-paper-600 mt-3 md:text-right max-w-[190px] md:ml-auto">
