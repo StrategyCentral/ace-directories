@@ -31,10 +31,10 @@ export default async function ClaimDonePage({
           <p className="eyebrow mb-4">Do these next</p>
           <ol className="space-y-4">
             {[
-              ["Add your firm description", "A few hundred words on who you act for and how you work."],
-              ["Set your practice areas", "Your plan allows more than one — each unlocks a new set of suburb pages."],
-              ["Upload your logo", "Profiles with a logo get noticeably more clicks in listing results."],
-              ["Check your enquiry email", "Make sure enquiries route to an inbox someone actually watches."],
+              ["Write a headline about their problem", "Not about your firm. This one line does more than everything else on the page."],
+              ["Answer the cost question", "Fear of an unknown bill stops more enquiries than the bill itself ever would."],
+              ["Add three specific reasons to choose you", "Specialisations, languages, a niche you own. Not \"experienced\"."],
+              ["Answer what they're too embarrassed to ask", "\"Can I afford this?\" \"Is it too late?\" These are the enquiries you're losing."],
             ].map(([t, d], i) => (
               <li key={t} className="flex gap-4">
                 <span className="shrink-0 size-6 rounded-full bg-brand-500/15 text-brand-200 grid place-items-center text-[11px]">
@@ -49,7 +49,7 @@ export default async function ClaimDonePage({
           </ol>
 
           <div className="flex flex-wrap gap-3 mt-8">
-            <Link href="/dashboard" className="btn btn-primary">Open my dashboard</Link>
+            <Link href="/dashboard/setup" className="btn btn-gold">Build my profile now</Link>
             <Link href={`/firm/${listing.slug}`} className="btn btn-ghost">View my public page</Link>
           </div>
         </div>

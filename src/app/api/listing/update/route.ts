@@ -9,6 +9,11 @@ export const runtime = "nodejs";
 const EDITABLE = [
   "tagline", "bio", "website", "email", "phone", "logo_url", "photo_url",
   "founded_year", "team_size", "languages", "accreditations", "socials", "video_url",
+  // conversion engine
+  "headline", "intro", "usps", "free_consult", "free_consult_mins", "fee_approach",
+  "fee_note", "response_commitment", "after_hours", "home_visits", "video_consults",
+  "abn", "admitted_year", "principal_name", "memberships", "awards", "case_results",
+  "faqs", "team", "onboarding_step",
 ] as const;
 
 const PLAN_AREA_LIMIT: Record<string, number> = {
@@ -71,6 +76,13 @@ export async function PATCH(req: Request) {
     () => undefined,
     () => undefined,
   );
+
+  // Mark onboarding finished once they reach the end of the wizard.
+  if (Number(body.onboarding_step) >= 5) {
+    await supabase.from("lawyers")
+      .update({ onboarding_done_at: new Date().toISOString() })
+      .eq("id", listingId);
+  }
 
   return NextResponse.json({ ok: true });
 }

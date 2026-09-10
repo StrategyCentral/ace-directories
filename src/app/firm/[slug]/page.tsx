@@ -10,6 +10,7 @@ import ListingCard from "@/components/ListingCard";
 import TierBadge from "@/components/TierBadge";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import ClaimBanner from "@/components/ClaimBanner";
+import ConversionProfile from "@/components/ConversionProfile";
 import TrackView, { TrackedLink, TrackedPhone } from "@/components/Track";
 import { RatingSummary, ReviewForm, ReviewList, Stars } from "@/components/Reviews";
 import { SITE, STATES } from "@/lib/site";
@@ -24,10 +25,13 @@ export async function generateMetadata({
   const l = await getListing(slug);
   if (!l) return {};
   const where = [l.suburb, l.state].filter(Boolean).join(", ");
+  const headline = (l as unknown as { headline?: string | null }).headline;
   const title = `${l.full_name} — ${where || "Australia"}`;
   return {
     title,
     description:
+      headline?.slice(0, 155) ??
+      (l as unknown as { intro?: string | null }).intro?.slice(0, 155) ??
       l.bio?.slice(0, 155) ??
       `${l.full_name} is a law practice listed in ${where || "Australia"} on the Aussie Lawyer Directory. See contact details and practice areas.`,
     alternates: { canonical: `/firm/${l.slug}` },
@@ -101,6 +105,8 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
 
         <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:items-start mt-8">
           <div className="space-y-8">
+            {paid && <ConversionProfile listing={listing} />}
+
             {/* ------------------------------------------------------ about */}
             <section className="surface rounded-[var(--radius-card)] p-6">
               <div className="flex items-start gap-4">
@@ -239,7 +245,9 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
 
           <aside className="lg:sticky lg:top-24 space-y-4">
             {paid ? (
-              <EnquiryPanel listingId={listing.id} listingName={listing.full_name} />
+              <div id="enquire" className="scroll-mt-24">
+                <EnquiryPanel listingId={listing.id} listingName={listing.full_name} />
+              </div>
             ) : (
               <div className="surface rounded-[var(--radius-card)] p-5">
                 <p className="eyebrow mb-3">Contact this firm</p>

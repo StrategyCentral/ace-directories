@@ -7,6 +7,7 @@ import PageHeader from "@/components/PageHeader";
 import ClaimFlow from "@/components/ClaimFlow";
 import Countdown from "@/components/Countdown";
 import { CLAIM_WINDOW_HOURS } from "@/lib/site";
+import { CLAIM_CHECKLIST } from "@/content/onboarding";
 
 export const dynamic = "force-dynamic";
 
@@ -107,15 +108,25 @@ export default async function ClaimListingPage({
             </div>
           ) : (
             <div className="surface rounded-2xl p-6">
-              <p className="eyebrow">How this works</p>
-              <p className="text-[13px] leading-relaxed text-paper-400 mt-3">
-                We email you a link to confirm the address is yours. That check is what stops
-                anyone but your firm taking control of this page.
+              <p className="eyebrow">Have these ready</p>
+              <p className="text-[12.5px] leading-relaxed text-paper-500 mt-2.5">
+                None of it is needed to start — but having it to hand means you can finish the
+                whole profile in one sitting.
               </p>
-              <p className="text-[12px] leading-relaxed text-paper-600 mt-4">
-                Once confirmed, the listing is held for you for{" "}
-                <strong className="text-paper-400">{CLAIM_WINDOW_HOURS} hours</strong> while you
-                pick a plan.
+              <ul className="mt-4 space-y-3">
+                {CLAIM_CHECKLIST.map((c) => (
+                  <li key={c.item} className="flex gap-2.5">
+                    <span className="text-brand-400 text-[12px] mt-0.5" aria-hidden="true">✓</span>
+                    <span>
+                      <span className="block text-[13px] text-paper-200">{c.item}</span>
+                      <span className="block text-[11.5px] text-paper-600 mt-0.5">{c.note}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11.5px] leading-relaxed text-paper-600 mt-5 pt-4 border-t border-white/[0.06]">
+                We email a link to confirm the address is yours — that check is what stops anyone
+                but your firm taking control of this page.
               </p>
             </div>
           )}

@@ -104,7 +104,10 @@ export default async function DashboardPage() {
                   {[l.suburb, l.state].filter(Boolean).join(", ")} · profile {l.profile_score}% complete
                 </p>
               </div>
-              <div className="flex gap-2.5">
+              <div className="flex gap-2.5 flex-wrap">
+                <Link href={`/dashboard/setup?listing=${l.id}`} className="btn btn-gold !py-2 !px-4 !text-[12.5px]">
+                  {l.profile_score < 60 ? "Build my profile" : "Improve my profile"}
+                </Link>
                 <Link href={`/firm/${l.slug}`} className="btn btn-ghost !py-2 !px-4 !text-[12.5px]">
                   View public page
                 </Link>
