@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db } from "./supabase";
+import { assertReachable, db } from "./supabase";
 import type { Listing, Plan, PracticeArea, Suburb } from "./types";
 
 const LISTING_FIELDS =
@@ -21,18 +21,20 @@ export const getPracticeAreas = cache(async (): Promise<PracticeArea[]> => {
 });
 
 export const getPracticeArea = cache(async (slug: string): Promise<PracticeArea | null> => {
-  const { data } = await db()
+  const { data, error } = await db()
     .from("practice_areas")
     .select("id,slug,name,singular,blurb,hero_question,intent_terms,tier,sort_order,listing_count")
     .eq("slug", slug)
     .maybeSingle();
+  assertReachable(error);
   return (data as PracticeArea) ?? null;
 });
 
 /* ----------------------------------------------------------------- geography */
 
 export const getSuburb = cache(async (slug: string): Promise<Suburb | null> => {
-  const { data } = await db().from("suburbs").select("*").eq("slug", slug).maybeSingle();
+  const { data, error } = await db().from("suburbs").select("*").eq("slug", slug).maybeSingle();
+  assertReachable(error);
   return (data as Suburb) ?? null;
 });
 
@@ -119,7 +121,11 @@ export async function listingsForCategoryPlace(
 }
 
 export const getListing = cache(async (slug: string): Promise<Listing | null> => {
-  const { data } = await db().from("lawyers").select(LISTING_FIELDS).eq("slug", slug).maybeSingle();
+  const { data, error } = await db()
+    .from("lawyers").select(LISTING_FIELDS).eq("slug", slug).maybeSingle();
+  // A real miss returns null; an unreachable database throws, so the page 5xxs
+  // instead of telling search engines the firm no longer exists.
+  assertReachable(error);
   return (data as unknown as Listing) ?? null;
 });
 

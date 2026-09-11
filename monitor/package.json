@@ -1,0 +1,7 @@
+{
+  "name": "ald-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node check.mjs" },
+  "engines": { "node": ">=20" }
+}
