@@ -93,14 +93,14 @@ export function claimStartedEmail(opts: {
 }) {
   const url = `${SITE.url}/claim/${opts.slug}`;
   return {
-    subject: `Your claim on ${opts.firmName} is open for 72 hours`,
+    subject: `Your claim on ${opts.firmName} is open — 72 hours to finish`,
     html: shell(
       `<p>Hi ${opts.firstName},</p>
-       <p>You've started a claim on <strong>${opts.firmName}</strong>. The listing is now reserved
-       for you and no one else can claim it.</p>
-       <p>You have <strong>${hoursLeft(opts.expiresAt)} hours</strong> to finish. If the claim
-       isn't completed in that window, the reservation lapses and the unclaimed listing is
-       removed from the directory along with any search ranking it has built.</p>
+       <p>You've confirmed your address at <strong>${opts.firmName}</strong>, so the claim is
+       open and the page is being held for you while you finish it.</p>
+       <p>You have <strong>${hoursLeft(opts.expiresAt)} hours</strong>. If you don't finish in
+       that window nothing is lost — the hold simply lifts and the listing carries on exactly
+       as it is. You can start again whenever suits.</p>
        ${button(url, "Finish my claim")}
        <p style="color:#697586;font-size:13px;">Didn't start this? Ignore this email and the
        claim expires on its own, or <a href="${SITE.url}/contact" style="color:#2f63f0;">tell us</a>.</p>`,
@@ -151,7 +151,7 @@ export function claimReminderEmail(opts: {
   const urgent = h <= 24;
   return {
     subject: urgent
-      ? `${h} hours left — ${opts.firmName} listing closes soon`
+      ? `${h} hours left to finish your ${opts.firmName} claim`
       : `Reminder: your ${opts.firmName} listing claim is still open`,
     html: shell(
       `<p>Hi ${opts.firstName},</p>
@@ -159,7 +159,7 @@ export function claimReminderEmail(opts: {
          opts.suburb ? ` in ${opts.suburb}` : ""
        } hasn't been completed yet.</p>
        <p style="${urgent ? "color:#b42318;font-weight:600;" : ""}">
-       ${h} hours remain. When the clock runs out the listing is removed from the directory.</p>
+       ${h} hours remain on the hold. After that you'd need to start the claim again.</p>
        <p>While it sits unclaimed, anyone searching for your firm sees a name and a phone
        number — no website link, no practice areas, no way to enquire.</p>
        ${button(url, "Complete my claim")}`,
