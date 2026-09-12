@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { assertReachable, db } from "./supabase";
+import { DatabaseUnavailableError, assertReachable, db } from "./supabase";
 import type { Listing, Plan, PracticeArea, Suburb } from "./types";
 
 const LISTING_FIELDS =
@@ -147,16 +147,31 @@ export const getNearbyListings = cache(
 
 /* ---------------------------------------------------------------- aggregates */
 
+/**
+ * Homepage and pricing counters.
+ *
+ * These MUST throw rather than fall back to zero. The homepage is ISR-cached
+ * for an hour, so a single failed read during an outage bakes "0 law firms,
+ * 0 suburbs covered" into the front page of a directory and serves it to
+ * everyone for the next sixty minutes. Throwing costs one 5xx and a retry;
+ * a silent zero costs credibility with every visitor who sees it.
+ */
 export const getStats = cache(async () => {
   const [listings, suburbs, areas] = await Promise.all([
     db().from("lawyers").select("id", { count: "exact", head: true }).eq("status", "live"),
     db().from("suburbs").select("id", { count: "exact", head: true }).gt("listing_count", 0),
     db().from("practice_areas").select("id", { count: "exact", head: true }),
   ]);
+  assertReachable(listings.error);
+  assertReachable(suburbs.error);
+  assertReachable(areas.error);
+  if (listings.count === null || suburbs.count === null || areas.count === null) {
+    throw new DatabaseUnavailableError("stat counts came back empty");
+  }
   return {
-    listings: listings.count ?? 0,
-    suburbs: suburbs.count ?? 0,
-    practiceAreas: areas.count ?? 0,
+    listings: listings.count,
+    suburbs: suburbs.count,
+    practiceAreas: areas.count,
     states: 8,
   };
 });
