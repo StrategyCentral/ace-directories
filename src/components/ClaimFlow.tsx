@@ -182,9 +182,9 @@ export default function ClaimFlow({
             <button disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
               {busy
                 ? "Sending…"
-                : verdict.level === "domain"
-                  ? "Email me a confirmation link"
-                  : "Send for manual review"}
+                : verdict.reason !== "incomplete" && verdict.level === "manual"
+                  ? "Send for manual review"
+                  : "Email me a confirmation link"}
             </button>
           </motion.form>
         ) : (
