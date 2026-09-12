@@ -5,6 +5,7 @@ import { getListing, getPlans } from "@/lib/queries";
 import { db } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import ClaimFlow from "@/components/ClaimFlow";
+import { firmHosts } from "@/lib/claim-domain";
 import Countdown from "@/components/Countdown";
 import { CLAIM_WINDOW_HOURS } from "@/lib/site";
 import { CLAIM_CHECKLIST } from "@/content/onboarding";
@@ -82,6 +83,7 @@ export default async function ClaimListingPage({
               suburb: listing.suburb,
               state: listing.state,
               phone: listing.phone,
+              firmHosts: firmHosts(listing),
             }}
             plans={plans}
             existingClaim={claim}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { money, cx } from "@/lib/format";
+import { assessEmail } from "@/lib/claim-domain";
 
 interface ListingLite {
   id: string;
@@ -12,6 +13,9 @@ interface ListingLite {
   suburb: string | null;
   state: string | null;
   phone: string | null;
+  /** Hostnames that count as the firm's own mail. Hosts only — never the
+      firm's actual email address, which has no business on the client. */
+  firmHosts: string[];
 }
 
 interface ExistingClaim {
@@ -42,6 +46,12 @@ export default function ClaimFlow({
   const [plan, setPlan] = useState<string>(existingClaim?.selected_plan ?? "featured");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState("");
+
+  // Same function the API uses to decide, so the hint cannot promise one thing
+  // and the server do another.
+  const verdict = assessEmail(emailInput, listing.firmHosts);
+  const expectedDomain = listing.firmHosts[0] ?? null;
 
   async function startClaim(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -149,9 +159,18 @@ export default function ClaimFlow({
             <div className="grid gap-3 sm:grid-cols-2">
               <Input name="full_name" label="Your full name" required />
               <Input name="role_at_firm" label="Your role (e.g. Principal)" required />
-              <Input name="email" label="Work email" type="email" required />
+              <Input
+                name="email"
+                label="Work email"
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+              />
               <Input name="phone" label="Direct phone" type="tel" />
             </div>
+
+            <EmailHint verdict={verdict} expectedDomain={expectedDomain} />
 
             <label className="flex items-start gap-3 text-[12.5px] text-paper-500 pt-1">
               <input type="checkbox" required className="mt-0.5 accent-[var(--color-brand-500)]" />
@@ -161,7 +180,11 @@ export default function ClaimFlow({
             {error && <p className="text-[12.5px] text-red-400">{error}</p>}
 
             <button disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
-              {busy ? "Sending…" : "Email me a confirmation link"}
+              {busy
+                ? "Sending…"
+                : verdict.level === "domain"
+                  ? "Email me a confirmation link"
+                  : "Send for manual review"}
             </button>
           </motion.form>
         ) : (
@@ -305,8 +328,15 @@ function Steps({ step }: { step: 1 | 2 | "sent" }) {
 }
 
 function Input({
-  name, label, type = "text", required,
-}: { name: string; label: string; type?: string; required?: boolean }) {
+  name, label, type = "text", required, value, onChange,
+}: {
+  name: string;
+  label: string;
+  type?: string;
+  required?: boolean;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
   return (
     <label className="block">
       <span className="block text-[11.5px] text-paper-600 mb-1.5">{label}</span>
@@ -314,9 +344,67 @@ function Input({
         name={name}
         type={type}
         required={required}
+        value={value}
+        onChange={onChange}
         className="w-full rounded-lg bg-white/[0.03] edge px-3 py-2.5 text-[13.5px]
                    text-paper-100 outline-none focus:border-brand-500/60 transition-colors"
       />
     </label>
+  );
+}
+
+/**
+ * Live verdict on the address as it is typed. Previously the person learned
+ * they had taken the slow path only on the screen after submitting — too late
+ * to switch to an address that would have gone straight through.
+ */
+function EmailHint({
+  verdict,
+  expectedDomain,
+}: {
+  verdict: ReturnType<typeof assessEmail>;
+  expectedDomain: string | null;
+}) {
+  if (verdict.reason === "incomplete") {
+    return (
+      <p className="text-[12px] leading-relaxed text-paper-600">
+        {expectedDomain
+          ? `Use your address at ${expectedDomain} and you'll be verified straight away.`
+          : "An address at the firm's own domain is verified straight away."}
+      </p>
+    );
+  }
+
+  if (verdict.level === "domain") {
+    return (
+      <p className="text-[12px] leading-relaxed text-brand-200 flex items-start gap-2">
+        <span aria-hidden="true">✓</span>
+        <span>
+          That&apos;s the firm&apos;s own domain — confirm the email and you go straight
+          through to choosing a plan.
+        </span>
+      </p>
+    );
+  }
+
+  const why =
+    verdict.reason === "free-mail"
+      ? `${verdict.domain} is a personal email provider, so we can't use it to prove you work at the firm.`
+      : verdict.reason === "unknown-firm-domain"
+        ? "We don't have a website on file for this firm yet, so we'll verify you by hand."
+        : `${verdict.domain} isn't the firm's own domain.`;
+
+  return (
+    <div className="rounded-[var(--radius-card)] border border-gold-500/25 bg-gold-500/[0.06] px-4 py-3">
+      <p className="text-[12px] leading-relaxed text-gold-300">
+        {why} You can still continue — it just goes to a manual check first, usually
+        within a business day.
+      </p>
+      {expectedDomain && (
+        <p className="text-[12px] leading-relaxed text-paper-400 mt-1.5">
+          To skip that wait, use your address at <strong>{expectedDomain}</strong>.
+        </p>
+      )}
+    </div>
   );
 }

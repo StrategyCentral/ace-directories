@@ -2,28 +2,12 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/supabase";
 import { claimVerifyEmail, send } from "@/lib/email";
+import { assessEmail, firmHosts } from "@/lib/claim-domain";
 
 export const runtime = "nodejs";
 
-const FREE_MAIL = new Set([
-  "gmail.com", "hotmail.com", "hotmail.com.au", "outlook.com", "outlook.com.au",
-  "yahoo.com", "yahoo.com.au", "bigpond.com", "bigpond.net.au", "icloud.com",
-  "live.com", "live.com.au", "me.com", "optusnet.com.au", "iinet.net.au",
-  "tpg.com.au", "aol.com", "proton.me", "protonmail.com", "gmx.com",
-]);
-
 /** Max claims we'll accept from one IP in 24h — blunt, but stops mass abuse. */
 const IP_LIMIT = 5;
-
-const hostOf = (url: string | null) => {
-  if (!url) return null;
-  try {
-    return new URL(url.startsWith("http") ? url : `https://${url}`)
-      .hostname.toLowerCase().replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-};
 
 export async function POST(req: Request) {
   let body: Record<string, unknown>;
@@ -104,12 +88,8 @@ export async function POST(req: Request) {
   // Does the work email belong to the firm's own domain? That, once confirmed
   // by clicking the emailed link, is what separates the firm from an impostor —
   // and it is the only thing that lets the clock run at all.
-  const domain = email.split("@")[1];
-  const firmHosts = [hostOf(listing.website), hostOf(listing.email ? `https://${listing.email.split("@")[1]}` : null)]
-    .filter(Boolean) as string[];
-  const domainMatch =
-    !FREE_MAIL.has(domain) &&
-    firmHosts.some((h) => h === domain || h.endsWith(`.${domain}`) || domain.endsWith(`.${h}`));
+  const verdict = assessEmail(email, firmHosts(listing));
+  const domainMatch = verdict.level === "domain";
 
   const token = randomUUID();
   const { data: claim, error } = await supabase
