@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
+import { revalidateListing } from "@/lib/revalidate-listing";
 import { getSession } from "@/lib/auth";
 import { isPaid } from "@/lib/types";
 
@@ -84,5 +85,6 @@ export async function PATCH(req: Request) {
       .eq("id", listingId);
   }
 
+  await revalidateListing(listingId);
   return NextResponse.json({ ok: true });
 }

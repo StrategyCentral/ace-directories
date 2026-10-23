@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { db } from "@/lib/supabase";
+import { revalidateListing } from "@/lib/revalidate-listing";
 import { stripe } from "@/lib/stripe";
 import { claimCompletedEmail, send } from "@/lib/email";
 
@@ -77,6 +78,9 @@ export async function POST(req: Request) {
             .eq("id", claimId);
         }
 
+        // Badge and ranking change now — don't leave them behind a 7-day cache.
+        await revalidateListing(listingId);
+
         const { data: listing } = await supabase
           .from("lawyers").select("full_name,slug").eq("id", listingId).maybeSingle();
         const to = session.customer_details?.email || session.customer_email;
@@ -121,6 +125,7 @@ export async function POST(req: Request) {
             .from("lawyers")
             .update({ tier: "free", plan_code: null, rank_score: 50 })
             .eq("id", listingId);
+          await revalidateListing(listingId);
         }
         break;
       }
