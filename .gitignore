@@ -11,3 +11,6 @@ __pycache__/
 *.sqlite
 /tmp/
 *.log
+
+# TypeScript incremental build cache (breaks Railway's Nixpacks cache mount when tracked)
+*.tsbuildinfo
