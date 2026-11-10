@@ -16,7 +16,10 @@ import { RatingSummary, ReviewForm, ReviewList, Stars } from "@/components/Revie
 import { SITE, STATES } from "@/lib/site";
 import { initials, telHref } from "@/lib/format";
 
-export const revalidate = 86400;
+// 7 days: listing data changes rarely, and a 24 h window meant every crawler pass over the
+// long tail (5,900 firm pages + practice x suburb) became a daily full re-render from Supabase.
+// That is what blew the free-tier egress quota in Oct 2026.
+export const revalidate = 604800;
 
 export async function generateMetadata({
   params,
