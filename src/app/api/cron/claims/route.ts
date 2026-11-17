@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { claimExpiredEmail, claimReminderEmail, send } from "@/lib/email";
+import { revalidateListing } from "@/lib/revalidate-listing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export async function GET(req: Request) {
         // Soft removal: the row survives so the claim can be reinstated by hand,
         // but the page 404s and drops out of the sitemap and every listing query.
         await supabase.from("lawyers").update({ status: "removed" }).eq("id", listing.id);
+        await revalidateListing(listing.id);
       } else {
         // Reservation lapses, listing stays exactly as it was.
         result.released++;

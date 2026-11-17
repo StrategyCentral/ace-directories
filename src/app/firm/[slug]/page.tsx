@@ -21,6 +21,18 @@ import { initials, telHref } from "@/lib/format";
 // That is what blew the free-tier egress quota in Oct 2026.
 export const revalidate = 604800;
 
+/**
+ * Empty on purpose. Without generateStaticParams Next renders a dynamic route
+ * fresh on every request and ignores `revalidate` — which is how ~6,000 firm
+ * pages and every practice x place page hit the database on each crawl and ran
+ * the Supabase egress allowance out. Returning [] builds nothing up front but
+ * lets each page be cached the first time it is asked for.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
+
 export async function generateMetadata({
   params,
 }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

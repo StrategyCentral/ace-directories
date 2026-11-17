@@ -21,6 +21,18 @@ import { FaqSchema, PracticeArticle } from "@/components/ContentSections";
 export const revalidate = 604800;
 
 /**
+ * Empty on purpose. Without generateStaticParams Next renders a dynamic route
+ * fresh on every request and ignores `revalidate` — which is how ~6,000 firm
+ * pages and every practice x place page hit the database on each crawl and ran
+ * the Supabase egress allowance out. Returning [] builds nothing up front but
+ * lets each page be cached the first time it is asked for.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
+
+/**
  * `place` is either a state slug ("vic") or a suburb slug ("richmond-vic").
  * One route serves both levels of the geography silo.
  */
