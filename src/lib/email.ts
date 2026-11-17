@@ -139,6 +139,59 @@ export function claimVerifyEmail(opts: {
   };
 }
 
+/** Internal: tells the owner a verified claim is waiting on a manual check. */
+export function claimNeedsReviewEmail(opts: {
+  firmName: string;
+  place: string;
+  firmWebsite: string | null;
+  who: string;
+  role: string | null;
+  email: string;
+  phone: string | null;
+  reviewUrl: string;
+}) {
+  const row = (k: string, v: string | null) =>
+    v ? `<tr><td style="padding:4px 14px 4px 0;color:#697586;">${k}</td><td>${v}</td></tr>` : "";
+  return {
+    subject: `Claim waiting on you: ${opts.firmName}`,
+    html: shell(
+      `<p><strong>${opts.who}</strong> has confirmed their email and wants to claim
+       <strong>${opts.firmName}</strong>${opts.place ? ` (${opts.place})` : ""}. The address
+       isn't at the firm's own domain, so nothing happens until you decide.</p>
+       <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;margin:8px 0 4px;">
+       ${row("Role", opts.role)}${row("Email", opts.email)}${row("Phone", opts.phone)}
+       ${row("Firm website on file", opts.firmWebsite ?? "none")}
+       </table>
+       ${button(opts.reviewUrl, "Review this claim")}
+       <p style="color:#697586;font-size:13px;">Approve and they get an email to pick a plan.
+       Decline and the listing stays exactly as it is.</p>`,
+      `${opts.who} is waiting on a manual check`,
+    ),
+  };
+}
+
+export function claimApprovedEmail(opts: {
+  firstName: string;
+  firmName: string;
+  slug: string;
+  expiresAt: string;
+}) {
+  const url = `${SITE.url}/claim/${opts.slug}`;
+  return {
+    subject: `Your claim on ${opts.firmName} is approved`,
+    html: shell(
+      `<p>Hi ${opts.firstName},</p>
+       <p>We've checked your claim on <strong>${opts.firmName}</strong> and approved it. The
+       last step is choosing a plan, and then the page is yours to edit.</p>
+       ${button(url, "Choose a plan")}
+       <p style="color:#697586;font-size:13px;">The page is held for you for
+       ${hoursLeft(opts.expiresAt)} hours. If you don't finish in that time nothing is lost:
+       the hold lifts and the listing carries on as it is.</p>`,
+      `Your claim on ${opts.firmName} is approved`,
+    ),
+  };
+}
+
 export function claimReminderEmail(opts: {
   firstName: string;
   firmName: string;
