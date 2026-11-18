@@ -96,7 +96,7 @@ export default async function ClaimListingPage({
             <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 "Your website link (currently hidden)",
-                "Up to 8 practice areas instead of 1",
+                "3 practice areas instead of 1, more on higher plans",
                 "Firm description, logo and photos",
                 "An enquiry form that emails you directly",
                 "Verified badge and higher placement",

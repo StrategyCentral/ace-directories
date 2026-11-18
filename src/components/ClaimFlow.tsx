@@ -255,7 +255,7 @@ export default function ClaimFlow({
                         <p className="text-[15px] tabular">
                           {money(price)}
                           <span className="text-paper-600 text-[12px]">
-                            {yearly ? "/yr" : "/mo"} + GST
+                            {yearly ? "/yr" : "/mo"} inc. GST
                           </span>
                         </p>
                       </div>

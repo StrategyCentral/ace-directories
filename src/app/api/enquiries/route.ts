@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
+import { enquiryEmail, send } from "@/lib/email";
+import { ADMIN_ALERT_TO } from "@/lib/claim-admin";
 
 export const runtime = "nodejs";
 
@@ -41,6 +43,40 @@ export async function POST(req: Request) {
       lead_score: leadScore,
     });
     if (error) throw new Error(error.message);
+
+    // Deliver it. A claimed firm gets the enquiry at its account address; anything
+    // else (an unclaimed firm, or a general "find me a lawyer" request) goes to us,
+    // so no enquiry ever sits unread in the database.
+    const supabase = db();
+    let to: string = ADMIN_ALERT_TO;
+    let firmName = "the directory (no firm selected)";
+    if (body.listing_id) {
+      const { data: l } = await supabase.from("lawyers")
+        .select("full_name,is_claimed,owner_user_id").eq("id", String(body.listing_id)).maybeSingle();
+      if (l) {
+        firmName = l.full_name;
+        if (l.is_claimed && l.owner_user_id) {
+          const { data: u } = await supabase.from("users")
+            .select("email").eq("id", l.owner_user_id).maybeSingle();
+          if (u?.email) to = u.email;
+        }
+        if (to === ADMIN_ALERT_TO) firmName = `${l.full_name} (unclaimed, not delivered to the firm)`;
+      }
+    }
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+    const mail = enquiryEmail({
+      firmName: esc(firmName),
+      name: esc(String(body.name ?? "").slice(0, 120) || "Not given"),
+      email: esc(email),
+      phone: body.phone ? esc(String(body.phone).slice(0, 40)) : null,
+      matter: esc(matter.slice(0, 4000)),
+      urgency: esc(urgency),
+    });
+    const sent = await send({
+      to, subject: mail.subject, html: mail.html, template: "enquiry",
+      listingId: body.listing_id ? String(body.listing_id) : undefined,
+    });
+    if ("error" in sent && sent.error) console.error("enquiry email failed", sent.error);
   } catch (e) {
     console.error("enquiry insert failed", e);
     return NextResponse.json({ error: "Could not send right now — please try again" }, { status: 500 });

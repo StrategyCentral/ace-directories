@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { claimExpiredEmail, claimReminderEmail, send } from "@/lib/email";
-import { revalidateListing } from "@/lib/revalidate-listing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,10 +13,8 @@ export const dynamic = "force-dynamic";
  * cadence never double-sends.
  */
 const OPEN = ["started", "verifying", "awaiting_payment"];
-// A claim can only put a listing at risk if the claimant proved control of an
-// inbox at the firm's own domain. Everything else has no clock and is never
-// removed — otherwise a stranger with a throwaway address could delete any
-// firm in the directory.
+// Only a claimant who proved control of an inbox at the firm's own domain gets
+// the "your hold has lapsed" email. No lapsed claim ever removes a listing.
 const CAN_EXPIRE_LISTING = "domain";
 const REMINDER_GAP_MS = 20 * 3_600_000;
 
@@ -74,18 +71,13 @@ export async function GET(req: Request) {
         .update({ status: "expired", expired_at: now.toISOString() })
         .eq("id", claim.id);
 
-      if (claim.verification_level === CAN_EXPIRE_LISTING) {
-        // Soft removal: the row survives so the claim can be reinstated by hand,
-        // but the page 404s and drops out of the sitemap and every listing query.
-        await supabase.from("lawyers").update({ status: "removed" }).eq("id", listing.id);
-        await revalidateListing(listing.id);
-      } else {
-        // Reservation lapses, listing stays exactly as it was.
-        result.released++;
-        continue;
-      }
+      // The hold lapses and the listing stays exactly as it was. A lapsed claim
+      // never takes a firm's page down: the claim emails promise that, and
+      // delisting a firm for not paying is pressure we do not apply.
+      result.released++;
+      if (claim.verification_level !== CAN_EXPIRE_LISTING) continue;
 
-      const mail = claimExpiredEmail({ firstName, firmName: listing.full_name });
+      const mail = claimExpiredEmail({ firstName, firmName: listing.full_name, slug: listing.slug });
       const sent = await send({
         to: claim.email, subject: mail.subject, html: mail.html,
         template: "claim-expired", listingId: listing.id, claimId: claim.id,

@@ -54,7 +54,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
                 <span className="text-[13px] text-paper-600 font-sans"> {yearly ? "/yr" : "/mo"}</span>
               </p>
               <p className="text-[11.5px] text-paper-600 mt-1">
-                + GST · {yearly ? `${money(Math.round(price / 12))} a month, billed yearly` : "billed monthly"}
+                inc. GST · {yearly ? `${money(Math.round(price / 12))} a month, billed yearly` : "billed monthly"}
               </p>
 
               <ul className="mt-6 space-y-2 text-[12.5px] text-paper-400 flex-1">
@@ -78,7 +78,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
       </div>
 
       <p className="text-[12px] text-paper-600 mt-6 text-center max-w-[620px] mx-auto">
-        Prices in AUD, excluding GST. No setup fee, no minimum term. Existing legacy listings can
+        Prices in AUD and include GST. No setup fee, no minimum term. Existing legacy listings can
         be claimed and upgraded — new firms start on a paid plan.
       </p>
     </div>

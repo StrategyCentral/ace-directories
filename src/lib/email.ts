@@ -221,17 +221,18 @@ export function claimReminderEmail(opts: {
   };
 }
 
-export function claimExpiredEmail(opts: { firstName: string; firmName: string }) {
+export function claimExpiredEmail(opts: { firstName: string; firmName: string; slug?: string }) {
   return {
-    subject: `${opts.firmName} has been removed from the directory`,
+    subject: `Your hold on ${opts.firmName} has lapsed`,
     html: shell(
       `<p>Hi ${opts.firstName},</p>
-       <p>The 72-hour claim window on <strong>${opts.firmName}</strong> has closed and the
-       unclaimed listing has been removed from the directory.</p>
-       <p>You can still list the firm again from scratch — it just starts as a new profile
-       rather than the existing page.</p>
-       ${button(`${SITE.url}/list-your-firm`, "List my firm")}`,
-      "Your listing claim window has closed",
+       <p>The 72-hour hold on <strong>${opts.firmName}</strong> has ended without a plan being
+       chosen. Nothing has changed on the listing: it is still in the directory as a basic
+       record, exactly as it was before.</p>
+       <p>You can start the claim again whenever it suits. We won't email you about this
+       claim again.</p>
+       ${button(`${SITE.url}/claim${opts.slug ? `/${opts.slug}` : ""}`, "Start again")}`,
+      "Your claim hold has ended. The listing is unchanged.",
     ),
   };
 }

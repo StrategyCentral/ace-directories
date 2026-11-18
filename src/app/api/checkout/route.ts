@@ -74,6 +74,7 @@ export async function POST(req: Request) {
               },
             },
       ],
+      payment_method_types: ["card"],
       allow_promotion_codes: true,
       automatic_tax: { enabled: false },
       subscription_data: {

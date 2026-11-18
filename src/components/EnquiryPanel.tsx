@@ -114,8 +114,10 @@ export default function EnquiryPanel({
             </button>
 
             <p className="text-[11px] leading-relaxed text-paper-600">
-              We pass your details to matching firms only. We never sell enquiries to
-              third-party lead brokers.
+              We pass your details to the firm you chose, or to matching firms, so they can
+              reply. We never sell enquiries. This is not legal advice and sending it does not
+              make the firm your lawyer. See our{" "}
+              <a href="/privacy" className="underline">privacy policy</a>.
             </p>
           </motion.form>
         )}

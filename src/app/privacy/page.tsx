@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 };
 
 const SECTIONS: [string, string][] = [
-  ["What we collect", "For people searching: the details you type into an enquiry form — name, email, phone and a description of your matter — plus standard server logs. For firms: your contact details, billing information (held by Stripe, never by us) and the content you add to your profile."],
+  ["What we collect", "For people searching: the details you type into an enquiry form — name, email, phone and a description of your matter — plus standard server logs and anonymous counts of profile views and phone taps. If you use the Maddie chat assistant, we keep the conversation so we can improve it and follow up a request for human help; do not put anything in the chat you would not put in an email. For firms: your contact details, billing information (held by Stripe, never by us) and the content you add to your profile."],
   ["Listing data", "Firm listings are compiled from publicly available business records: firm names, business addresses and published business phone numbers. We do not publish private residential addresses or personal mobile numbers, and we remove any listing on request at no charge."],
   ["How we use it", "Enquiry details are forwarded to the firm you selected or to firms matching your criteria, so they can respond to you. We do not sell enquiries to third-party lead brokers, data brokers or marketing lists."],
-  ["Email", "Firms with a listing may receive email about that listing, including claim reminders. Every email carries an unsubscribe link and a removal link, as required by the Spam Act 2003 (Cth)."],
-  ["Storage and processors", "Data is stored on infrastructure hosted in Australia and the United States. We use Supabase (database), Railway (hosting), Stripe (payments) and Resend (email). Each is bound by its own processing terms."],
+  ["Email", "Firms with a listing may receive email about that listing, including claim reminders. Every email identifies us, and marketing email carries a working way to opt out and a link to have the listing removed, as required by the Spam Act 2003 (Cth)."],
+  ["Storage and processors", "Data is stored and processed outside Australia, mainly in Japan and the United States. We use Supabase (database), Railway (hosting), Cloudflare (network and security), Stripe (payments), Resend (email) and Anthropic (the AI model behind the Maddie assistant). Each is bound by its own processing terms."],
   ["Access, correction and complaints", "You can ask us what we hold about you, have it corrected, or have it deleted. Contact us and we will respond within a reasonable period. If you are not satisfied you may complain to the Office of the Australian Information Commissioner (oaic.gov.au)."],
   ["Cookies", "We use only the cookies needed to keep you signed in to a firm dashboard. We do not run advertising or cross-site tracking cookies."],
 ];

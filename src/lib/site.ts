@@ -9,7 +9,7 @@ export const SITE = {
   email: "hello@aussielawyerdirectory.com.au",
   supportEmail: "support@aussielawyerdirectory.com.au",
   abn: "",
-  postal: "Aussie Lawyer Directory, PO Box 1, Melbourne VIC 3000",
+  postal: "Aussie Lawyer Directory, PO Box 2027, Mornington VIC 3931",
 } as const;
 
 export const STATES = [

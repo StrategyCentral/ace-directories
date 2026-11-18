@@ -230,7 +230,7 @@ export const CLAIM_CHECKLIST: { item: string; note: string }[] = [
   { item: "ABN", note: "For the verification badge on your profile" },
   { item: "Practising certificate details", note: "We may ask to confirm against your state's register" },
   { item: "A logo and a photo", note: "A URL to each is enough — profiles with a face get more enquiries" },
-  { item: "Your practice areas", note: "Up to eight, depending on plan. Each one puts you on more suburb pages" },
+  { item: "Your practice areas", note: "Three on Verified, eight on Featured. Each one puts you on more suburb pages" },
   { item: "How you charge", note: "Fixed, hourly, no win no fee — naming it plainly converts better than staying quiet" },
   { item: "Payment details", note: "Card. No setup fee, no lock-in, cancel from the dashboard" },
 ];

@@ -48,8 +48,8 @@ export default function ListingPolicyPage() {
           <h2 className="text-[15px] font-medium text-paper-100">Unclaimed listings</h2>
           <p className="mt-2">
             Listings sourced from public records show a name, suburb and phone number only.
-            They stay live indefinitely unless a claim is started and then abandoned, or the
-            firm asks for removal.{" "}
+            They stay live indefinitely unless the firm asks for removal. An abandoned claim
+            changes nothing.{" "}
             <Link href="/remove-my-listing" className="text-brand-400 hover:text-brand-200">
               Removal is free
             </Link>.
