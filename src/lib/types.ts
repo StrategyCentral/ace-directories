@@ -36,6 +36,7 @@ export interface Listing {
   view_count: number;
   verified_at: string | null;
   original_url: string | null;
+  source?: string | null;
   extra_suburb_ids?: string[] | null;
   extra_suburb_slots?: number;
   team_slots?: number;

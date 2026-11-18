@@ -6,7 +6,7 @@ const LISTING_FIELDS =
   "id,slug,full_name,entity_type,status,tier,is_claimed,address,suburb,suburb_id,state,postcode," +
   "full_address,lat,lng,phone,email,website,practice_areas,languages,tagline,bio,logo_url,photo_url," +
   "founded_year,team_size,accreditations,socials,review_count,review_avg,profile_score,rank_score," +
-  "view_count,verified_at,original_url,extra_suburb_ids,extra_suburb_slots,team_slots,parent_listing_id,role_title,is_founder,plan_code";
+  "view_count,verified_at,original_url,source,extra_suburb_ids,extra_suburb_slots,team_slots,parent_listing_id,role_title,is_founder,plan_code";
 
 /* ------------------------------------------------------------------ taxonomy */
 

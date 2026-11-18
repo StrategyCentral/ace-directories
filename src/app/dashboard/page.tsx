@@ -16,6 +16,7 @@ import ActivityPanel from "@/components/ActivityPanel";
 import FirmReviews from "@/components/FirmReviews";
 import TierBadge from "@/components/TierBadge";
 import HideToggle from "@/components/HideToggle";
+import { isTestListing } from "@/lib/test-listing";
 
 export const dynamic = "force-dynamic";
 
@@ -118,7 +119,12 @@ export default async function DashboardPage() {
 
       <div className="mx-auto max-w-[1240px] px-5 pb-16 space-y-10">
         {rows.map((l) => (
-          <section key={l.id} className="surface rounded-2xl p-6 md:p-8">
+          <section key={l.id} className={"surface rounded-2xl p-6 md:p-8" + (isTestListing(l) ? " test-glow-card" : "")}>
+            {isTestListing(l) && (
+              <p className="mb-5 rounded-lg border-2 border-red-500 bg-red-500/[0.12] px-4 py-2.5 text-center text-[13px] font-bold tracking-[0.12em] uppercase text-red-300">
+                Admin test listing · not a real listing
+              </p>
+            )}
             <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
               <div>
                 <h2 className="text-[17px] font-medium flex items-center gap-2.5">

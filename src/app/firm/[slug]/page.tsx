@@ -8,6 +8,8 @@ import { isPaid } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import ListingCard from "@/components/ListingCard";
 import TierBadge from "@/components/TierBadge";
+import TestListingBanner from "@/components/TestListingBanner";
+import { isTestListing } from "@/lib/test-listing";
 import EnquiryPanel from "@/components/EnquiryPanel";
 import ClaimBanner from "@/components/ClaimBanner";
 import ConversionProfile from "@/components/ConversionProfile";
@@ -70,14 +72,16 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
   ]);
 
   const paid = isPaid(listing.tier);
+  const testListing = isTestListing(listing);
   const areaMap = new Map(allAreas.map((a) => [a.slug, a]));
   const areas = (listing.practice_areas ?? []).map((s) => areaMap.get(s)).filter(Boolean);
   const stateSlug = STATES.find((s) => s.code === listing.state)?.slug;
   const where = [listing.suburb, listing.state].filter(Boolean).join(", ");
 
   return (
-    <>
+    <div className={testListing ? "test-glow" : undefined}>
       <TrackView listingId={listing.id} source="firm-profile" />
+      {testListing && <TestListingBanner />}
       <PageHeader
         crumbs={[
           { href: "/", label: "Home" },
@@ -388,7 +392,7 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
           }),
         }}
       />
-    </>
+    </div>
   );
 }
 

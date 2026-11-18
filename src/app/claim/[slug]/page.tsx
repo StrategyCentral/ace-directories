@@ -6,6 +6,8 @@ import { getAddons, getFounder } from "@/lib/addons";
 import { db } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import ClaimFlow from "@/components/ClaimFlow";
+import TestListingBanner from "@/components/TestListingBanner";
+import { isTestListing } from "@/lib/test-listing";
 import { firmHosts } from "@/lib/claim-domain";
 import Countdown from "@/components/Countdown";
 import { CLAIM_WINDOW_HOURS } from "@/lib/site";
@@ -71,6 +73,7 @@ export default async function ClaimListingPage({
 
   return (
     <>
+      {isTestListing(listing) && <TestListingBanner />}
       <PageHeader
         crumbs={[{ href: "/", label: "Home" }, { href: "/claim", label: "Claim" }, { label: listing.full_name }]}
         eyebrow="Claim listing"
