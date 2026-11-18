@@ -10,7 +10,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Pricing for Law Firms",
   description:
-    "Verified from $89/mo, Featured from $199/mo, Suburb Dominator from $499/mo. Cheaper than a single acquired client, with no setup fee and no lock-in contract.",
+    "Verified from $89 a month, Featured from $199 a month. One new client covers the cost. No setup fee and no minimum term.",
   alternates: { canonical: "/pricing" },
 };
 

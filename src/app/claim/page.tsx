@@ -43,7 +43,7 @@ export default async function ClaimIndexPage() {
             {
               n: "03",
               t: "Choose a plan and go live",
-              d: "Pick Verified, Featured or Suburb Dominator. Your profile unlocks the moment payment clears.",
+              d: "Pick Verified or Featured. Your profile unlocks the moment payment clears.",
             },
           ].map((s) => (
             <div key={s.n} className="surface rounded-[var(--radius-card)] p-6">
