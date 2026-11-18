@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { money, cx } from "@/lib/format";
 import { assessEmail } from "@/lib/claim-domain";
+import { sellFor } from "@/content/plans";
 
 interface ListingLite {
   id: string;
@@ -224,64 +225,215 @@ export default function ClaimFlow({
               </div>
 
               <div className="mt-6 grid gap-3">
-                {plans.map((p) => {
+                {plans.map((p, idx) => {
                   const price = yearly ? p.yearly_price : p.monthly_price;
                   const selected = plan === p.code;
+                  const sell = sellFor(p.code);
+                  const saving = p.monthly_price * 12 - p.yearly_price;
                   return (
-                    <button
+                    <motion.div
                       key={p.code}
-                      type="button"
+                      layout
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.06 * idx, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={selected ? undefined : { y: -2 }}
+                      role="radio"
+                      aria-checked={selected}
+                      tabIndex={0}
                       onClick={() => setPlan(p.code)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPlan(p.code); } }}
                       className={cx(
-                        "text-left rounded-[var(--radius-card)] border p-5 transition-all",
+                        "relative cursor-pointer text-left rounded-[var(--radius-card)] border p-5 md:p-6 transition-colors outline-none focus-visible:border-brand-400",
                         selected
-                          ? "border-brand-500/60 bg-brand-500/[0.07]"
-                          : "border-white/[0.07] bg-white/[0.015] hover:border-white/[0.16]",
+                          ? "border-brand-500/70 bg-brand-500/[0.07] plan-glow"
+                          : "border-white/[0.07] bg-white/[0.015] hover:border-white/[0.18]",
                       )}
                     >
                       <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div>
-                          <p className="text-[15px] font-medium flex items-center gap-2">
-                            {p.name}
-                            {p.is_popular && (
-                              <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded
-                                               bg-gold-500 text-[#1a1406] font-semibold">
-                                Most popular
-                              </span>
+                        <div className="flex items-start gap-3.5">
+                          <span
+                            className={cx(
+                              "mt-0.5 size-5 rounded-full border grid place-items-center shrink-0 transition-colors",
+                              selected ? "border-brand-400 bg-brand-500" : "border-white/20",
+                            )}
+                          >
+                            {selected && (
+                              <motion.svg
+                                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                                width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2.2"
+                              >
+                                <path d="M2.5 6.3 5 8.8l4.5-5.6" strokeLinecap="round" strokeLinejoin="round" />
+                              </motion.svg>
+                            )}
+                          </span>
+                          <div>
+                            <p className="text-[15.5px] font-medium flex items-center gap-2 flex-wrap">
+                              {p.name}
+                              {p.is_popular && (
+                                <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded
+                                                 bg-gold-500 text-[#1a1406] font-semibold">
+                                  Most popular
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[12.5px] text-paper-500 mt-1">{p.tagline}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[19px] tabular overflow-hidden h-[28px]">
+                            <AnimatePresence mode="popLayout" initial={false}>
+                              <motion.span
+                                key={price}
+                                initial={{ y: 16, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -16, opacity: 0 }}
+                                transition={{ duration: 0.28 }}
+                                className="inline-block"
+                              >
+                                {money(price)}
+                              </motion.span>
+                            </AnimatePresence>
+                            <span className="text-paper-600 text-[12px]">{yearly ? " /yr" : " /mo"}</span>
+                          </p>
+                          <p className="text-[11.5px] mt-0.5 h-[16px]">
+                            {yearly && saving > 0 ? (
+                              <span className="text-gold-400">You save {money(saving)} a year</span>
+                            ) : (
+                              <span className="text-paper-600">billed monthly</span>
                             )}
                           </p>
-                          <p className="text-[12.5px] text-paper-500 mt-1">{p.tagline}</p>
                         </div>
-                        <p className="text-[15px] tabular">
-                          {money(price)}
-                          <span className="text-paper-600 text-[12px]">
-                            {yearly ? "/yr" : "/mo"} inc. GST
-                          </span>
-                        </p>
                       </div>
-                      {selected && (
-                        <ul className="mt-4 grid gap-1.5 sm:grid-cols-2 text-[12.5px] text-paper-400">
-                          {p.features.map((f) => (
-                            <li key={f} className="flex gap-2">
-                              <span className="text-brand-400">✓</span>
-                              {f}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </button>
+
+                      <AnimatePresence initial={false}>
+                        {selected && (
+                          <motion.div
+                            key="body"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                            className="overflow-hidden"
+                          >
+                            {sell && (
+                              <div className="pt-5">
+                                <p className="text-[12px] text-brand-200">{sell.bestFor}</p>
+                                <p className="text-[13.5px] leading-relaxed text-paper-300 mt-2.5 max-w-[640px]">
+                                  {sell.pitch}
+                                </p>
+                                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                                  {sell.wins.map((w, i) => (
+                                    <motion.li
+                                      key={w}
+                                      initial={{ opacity: 0, x: -8 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: 0.12 + i * 0.07 }}
+                                      className="flex gap-2.5 text-[13px] text-paper-100"
+                                    >
+                                      <span className="text-gold-400 shrink-0">★</span>
+                                      {w}
+                                    </motion.li>
+                                  ))}
+                                </ul>
+                                <motion.p
+                                  initial={{ opacity: 0, scale: 0.98 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.45 }}
+                                  className="mt-5 rounded-lg border border-gold-500/30 bg-gold-500/[0.07] px-4 py-3
+                                             text-[13px] leading-relaxed text-gold-300"
+                                >
+                                  {sell.maths}
+                                </motion.p>
+                              </div>
+                            )}
+                            <p className="eyebrow mt-6 mb-3">Everything included</p>
+                            <ul className="grid gap-1.5 sm:grid-cols-2 text-[12.5px] text-paper-400">
+                              {p.features.map((f) => (
+                                <li key={f} className="flex gap-2">
+                                  <span className="text-brand-400">✓</span>
+                                  {f}
+                                </li>
+                              ))}
+                            </ul>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
                   );
                 })}
               </div>
 
               {error && <p className="text-[12.5px] text-red-400 mt-4">{error}</p>}
 
-              <button onClick={checkout} disabled={busy} className="btn btn-primary w-full mt-6 disabled:opacity-60">
-                {busy ? "Opening checkout…" : "Continue to secure checkout"}
-              </button>
-              <p className="text-[11.5px] text-paper-600 mt-3 text-center">
-                Payments handled by Stripe. Cancel from your dashboard at any time.
-              </p>
+              {(() => {
+                const chosen = plans.find((x) => x.code === plan) ?? plans[0];
+                if (!chosen) return null;
+                const total = yearly ? chosen.yearly_price : chosen.monthly_price;
+                return (
+                  <motion.div
+                    layout
+                    className="mt-6 rounded-[var(--radius-card)] border border-white/[0.08] bg-white/[0.02] px-5 py-4
+                               flex items-center justify-between gap-4 flex-wrap"
+                  >
+                    <div>
+                      <p className="text-[13.5px] text-paper-100">
+                        {chosen.name}, billed {yearly ? "yearly" : "monthly"}
+                      </p>
+                      <p className="text-[12px] text-paper-500 mt-0.5">
+                        Renews each {yearly ? "year" : "month"} until you cancel. No setup fee, no minimum term.
+                      </p>
+                    </div>
+                    <p className="text-[22px] tabular">
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.span
+                          key={total}
+                          initial={{ y: 14, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: -14, opacity: 0 }}
+                          transition={{ duration: 0.28 }}
+                          className="inline-block"
+                        >
+                          {money(total)}
+                        </motion.span>
+                      </AnimatePresence>
+                      <span className="text-paper-600 text-[12px]"> today</span>
+                    </p>
+                  </motion.div>
+                );
+              })()}
+
+              <motion.button
+                onClick={checkout}
+                disabled={busy}
+                whileHover={{ scale: busy ? 1 : 1.01 }}
+                whileTap={{ scale: 0.985 }}
+                className="btn btn-primary btn-shine w-full mt-4 !py-3.5 !text-[14.5px] disabled:opacity-70"
+              >
+                {busy ? (
+                  <span className="flex items-center justify-center gap-2.5">
+                    <span className="size-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Opening secure checkout
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <rect x="4" y="10.5" width="16" height="10" rx="2" />
+                      <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" strokeLinecap="round" />
+                    </svg>
+                    Continue to secure checkout
+                  </span>
+                )}
+              </motion.button>
+
+              <ul className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-[11.5px] text-paper-500">
+                {["Secure payment by Stripe", "Cancel any time from your dashboard", "Live the moment payment clears"].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <span className="text-brand-400">✓</span>{t}
+                  </li>
+                ))}
+              </ul>
             </div>
           </motion.div>
         )}

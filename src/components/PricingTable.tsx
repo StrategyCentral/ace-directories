@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { cx, money } from "@/lib/format";
+import { sellFor } from "@/content/plans";
 
 export default function PricingTable({ plans }: { plans: Plan[] }) {
   const [yearly, setYearly] = useState(true);
@@ -28,7 +29,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
         </button>
       </div>
 
-      <div className="mt-9 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+      <div className={cx("mt-9 grid gap-3 mx-auto", plans.length <= 2 ? "md:grid-cols-2 max-w-[920px]" : "lg:grid-cols-2 xl:grid-cols-4")}>
         {plans.map((p) => {
           const price = yearly ? p.yearly_price : p.monthly_price;
           return (
@@ -54,8 +55,18 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
                 <span className="text-[13px] text-paper-600 font-sans"> {yearly ? "/yr" : "/mo"}</span>
               </p>
               <p className="text-[11.5px] text-paper-600 mt-1">
-                inc. GST · {yearly ? `${money(Math.round(price / 12))} a month, billed yearly` : "billed monthly"}
+                {yearly ? `${money(Math.round(price / 12))} a month, billed yearly` : "billed monthly"}
               </p>
+
+              {sellFor(p.code) && (
+                <>
+                  <p className="text-[13px] leading-relaxed text-paper-300 mt-5">{sellFor(p.code)!.pitch}</p>
+                  <p className="mt-4 rounded-lg border border-gold-500/30 bg-gold-500/[0.07] px-3.5 py-2.5
+                                text-[12.5px] leading-relaxed text-gold-300">
+                    {sellFor(p.code)!.maths}
+                  </p>
+                </>
+              )}
 
               <ul className="mt-6 space-y-2 text-[12.5px] text-paper-400 flex-1">
                 {p.features.map((f) => (
@@ -78,8 +89,8 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
       </div>
 
       <p className="text-[12px] text-paper-600 mt-6 text-center max-w-[620px] mx-auto">
-        Prices in AUD and include GST. No setup fee, no minimum term. Existing legacy listings can
-        be claimed and upgraded — new firms start on a paid plan.
+        Prices in AUD. No GST is charged. No setup fee, no minimum term. Cancel
+        from your dashboard and billing stops at the end of the period.
       </p>
     </div>
   );

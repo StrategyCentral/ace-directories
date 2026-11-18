@@ -10,6 +10,7 @@ import ProfileEditor from "@/components/ProfileEditor";
 import ActivityPanel from "@/components/ActivityPanel";
 import FirmReviews from "@/components/FirmReviews";
 import TierBadge from "@/components/TierBadge";
+import HideToggle from "@/components/HideToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -108,11 +109,17 @@ export default async function DashboardPage() {
                 <Link href={`/dashboard/setup?listing=${l.id}`} className="btn btn-primary !py-2 !px-4 !text-[12.5px]">
                   {l.profile_score < 60 ? "Build my profile" : "Improve my profile"}
                 </Link>
-                <Link href={`/firm/${l.slug}`} className="btn btn-ghost !py-2 !px-4 !text-[12.5px]">
-                  View public page
-                </Link>
+                {l.status === "live" && (
+                  <Link href={`/firm/${l.slug}`} className="btn btn-ghost !py-2 !px-4 !text-[12.5px]">
+                    View public page
+                  </Link>
+                )}
               </div>
             </div>
+
+            {(l.status === "live" || l.status === "hidden") && (
+              <HideToggle listingId={l.id} hidden={l.status === "hidden"} />
+            )}
 
             <ActivityPanel activity={activity[l.id].stats} daily={activity[l.id].daily} />
 

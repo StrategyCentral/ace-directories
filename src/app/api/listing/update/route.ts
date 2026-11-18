@@ -47,7 +47,7 @@ export async function PATCH(req: Request) {
   if (!claim) return NextResponse.json({ error: "You don't manage that listing" }, { status: 403 });
 
   const { data: listing } = await supabase
-    .from("lawyers").select("tier,plan_code").eq("id", listingId).maybeSingle();
+    .from("lawyers").select("tier,plan_code,status").eq("id", listingId).maybeSingle();
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -64,6 +64,13 @@ export async function PATCH(req: Request) {
     const limit = PLAN_AREA_LIMIT[listing.plan_code ?? "verified"] ?? 1;
     const areas = (body.practice_areas as string[]).slice(0, limit);
     patch.practice_areas = areas;
+  }
+
+  // Owner-controlled visibility. "hidden" takes the page out of search, the
+  // sitemap and every suburb page without touching the subscription or the
+  // profile. Only moves between live and hidden, never out of "removed".
+  if (typeof body.hidden === "boolean" && (listing.status === "live" || listing.status === "hidden")) {
+    patch.status = body.hidden ? "hidden" : "live";
   }
 
   const { error } = await supabase.from("lawyers").update(patch).eq("id", listingId);

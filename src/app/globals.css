@@ -201,3 +201,15 @@ body {
   border: 2px solid var(--color-ink-950);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-600); }
+
+/* Checkout: soft glow on the chosen plan and a light sweep across the pay button. */
+.plan-glow { box-shadow: 0 0 0 1px rgba(63,116,255,.35), 0 18px 60px -22px rgba(63,116,255,.55); }
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
+  transform: translateX(-120%); animation: btn-sweep 3.2s ease-in-out infinite;
+}
+@keyframes btn-sweep { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes pop-ring { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .btn-shine::after { animation: none; } }

@@ -50,7 +50,7 @@ export async function generateMetadata({
       l.bio?.slice(0, 155) ??
       `${l.full_name} is a law practice listed in ${where || "Australia"} on the Aussie Lawyer Directory. See contact details and practice areas.`,
     alternates: { canonical: `/firm/${l.slug}` },
-    robots: l.status === "removed" ? { index: false, follow: false } : undefined,
+    robots: l.status !== "live" ? { index: false, follow: false } : undefined,
     openGraph: { title, url: `/firm/${l.slug}`, type: "profile" },
   };
 }
@@ -58,7 +58,7 @@ export async function generateMetadata({
 export default async function FirmPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const listing = await getListing(slug);
-  if (!listing || listing.status === "removed") notFound();
+  if (!listing || listing.status !== "live") notFound();
 
   const [nearby, allAreas, reviews, breakdown] = await Promise.all([
     getNearbyListings(listing, 4),

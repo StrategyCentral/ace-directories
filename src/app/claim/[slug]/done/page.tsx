@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getListing } from "@/lib/queries";
 import PageHeader from "@/components/PageHeader";
+import PaidCelebration from "@/components/PaidCelebration";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,11 @@ export default async function ClaimDonePage({
       <PageHeader
         eyebrow="Payment received"
         title={`${listing.full_name} is yours.`}
-        intro="Your subscription is active and the listing is verified. Stripe will email your receipt separately — it can take a few seconds for the badge to appear on your public page."
+        intro="Your subscription is active and the listing is verified. Stripe will email your receipt separately. It can take a few seconds for the badge to appear on your public page."
       />
 
       <div className="mx-auto max-w-[1240px] px-5 pb-16">
+        <PaidCelebration />
         <div className="surface rounded-2xl p-7 md:p-9 max-w-[720px]">
           <p className="eyebrow mb-4">Do these next</p>
           <ol className="space-y-4">

@@ -76,7 +76,9 @@ export async function POST(req: Request) {
       ],
       payment_method_types: ["card"],
       allow_promotion_codes: true,
+      // The operating entity is not registered for GST, so no tax is calculated.
       automatic_tax: { enabled: false },
+      billing_address_collection: "required",
       subscription_data: {
         metadata: { listing_id: listingId, plan_code: planCode, claim_id: claimId ?? "" },
       },

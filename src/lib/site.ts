@@ -8,7 +8,8 @@ export const SITE = {
     "Find the right Australian lawyer in seconds. Search 5,900+ law firms and solicitors by practice area and suburb, across every state and territory.",
   email: "hello@aussielawyerdirectory.com.au",
   supportEmail: "support@aussielawyerdirectory.com.au",
-  abn: "",
+  entity: "ACE Trading Bots Pty Ltd (ACN 683 935 391) as trustee for the ACE Trading Bots Unit Trust",
+  abn: "77 162 672 050",
   postal: "Aussie Lawyer Directory, PO Box 2027, Mornington VIC 3931",
 } as const;
 

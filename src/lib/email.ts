@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { SITE } from "./site";
 import { db } from "./supabase";
+import { ESSENTIAL, isSuppressed, unsubUrl } from "./unsubscribe";
 
 const key = process.env.RESEND_API_KEY;
 const from = process.env.RESEND_FROM || `${SITE.name} <hello@${SITE.domain}>`;
@@ -28,7 +29,21 @@ export async function send({ to, subject, html, template, listingId, claimId }: 
     return { skipped: true };
   }
 
-  const { data, error } = await r.emails.send({ from, to, subject, html });
+  // Honour opt-outs for everything except replies to something the person just did.
+  if (!ESSENTIAL.has(template) && (await isSuppressed(to).catch(() => false))) {
+    console.info(`[email] ${template} to ${to} skipped: unsubscribed`);
+    return { skipped: true };
+  }
+
+  const unsub = unsubUrl(to);
+  const { data, error } = await r.emails.send({
+    from, to, subject,
+    html: html.replaceAll("{{UNSUB_URL}}", unsub),
+    headers: {
+      "List-Unsubscribe": `<${unsub.replace("/unsubscribe?", "/api/unsubscribe?")}>, <mailto:${SITE.supportEmail}?subject=unsubscribe>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  });
   if (error) {
     console.error(`[email] ${template} to ${to} failed:`, error);
     return { error };
@@ -67,8 +82,10 @@ const shell = (body: string, preheader: string) => `
 ${body}
 </td></tr>
 <tr><td style="padding:20px 28px;background:#f8fafc;border-top:1px solid #e3e8ef;color:#697586;font-size:11.5px;line-height:1.6;">
-  ${SITE.name} · ${SITE.postal}<br>
+  ${SITE.name} · ${SITE.postal.replace(`${SITE.name}, `, "")}<br>
+  Operated by ${SITE.entity} · ABN ${SITE.abn}<br>
   You received this because your practice is listed in our public directory.
+  <a href="{{UNSUB_URL}}" style="color:#2f63f0;">Unsubscribe</a> ·
   <a href="${SITE.url}/remove-my-listing" style="color:#2f63f0;">Request removal</a> ·
   <a href="${SITE.url}/privacy" style="color:#2f63f0;">Privacy</a>
 </td></tr>

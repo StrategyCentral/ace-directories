@@ -17,19 +17,15 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Is there a free listing?",
-    a: "Not for new firms. The free listings you see in the directory are legacy records we hold from public sources — a name, a suburb and a phone number. Anyone joining today starts on a paid plan. It keeps the directory free of abandoned profiles, which is what made every other Australian directory unusable.",
+    a: "Not for new firms. The free listings you see in the directory are legacy records we hold from public sources — a name, a suburb and a phone number. Anyone joining today starts on a paid plan. It keeps the directory free of abandoned profiles.",
   },
   {
     q: "How does this compare to Google Ads?",
-    a: "Australian legal keywords run roughly $8–$45 a click, and agencies report $200–$550 per booked consultation. Featured costs $199 a month. If the directory sends you one matter a year it has paid for itself several times over.",
+    a: "A click on a legal keyword in Google Ads costs money whether or not that person ever calls you. Your listing costs the same flat amount every month however many people view it, call you or enquire. Just one new client from your ALD listing would cover months of the cost.",
   },
   {
     q: "Is there a setup fee or a lock-in contract?",
-    a: "No to both. Yellow Pages charges a setup fee of up to $3,999 and a 12-month minimum. We charge neither — cancel from your dashboard and billing stops at the end of the period.",
-  },
-  {
-    q: "What is suburb exclusivity?",
-    a: "On the Suburb Dominator plan you hold the top position for one practice area in one suburb, and no competing firm appears above you on that page. One firm per suburb per category — when it's taken, it's taken.",
+    a: "No to both. There is no setup fee and no minimum term. Cancel from your dashboard and billing stops at the end of the period.",
   },
   {
     q: "Do you sell my enquiries to other firms?",
@@ -49,36 +45,14 @@ export default async function PricingPage() {
       <PageHeader
         crumbs={[{ href: "/", label: "Home" }, { label: "Pricing" }]}
         eyebrow="For law firms"
-        title="One matter pays for a decade of this."
-        intro={`Australian legal clicks cost $8–$45 on Google and a booked consultation runs $200–$550. A Featured listing in front of ${stats.listings.toLocaleString("en-AU")} of your peers costs $199 a month. No setup fee, no lock-in.`}
+        title="One new client covers the cost."
+        intro={`Your firm is already one of ${stats.listings.toLocaleString("en-AU")} practices in the directory. A plan turns that bare record into a profile that brings you enquiries. Flat price, no setup fee, no minimum term.`}
       />
 
       <div className="mx-auto max-w-[1240px] px-5 pb-8">
         <PricingTable plans={plans} />
       </div>
 
-      {/* ---------------------------------------------------------- add-ons */}
-      <section className="mx-auto max-w-[1240px] px-5 py-14">
-        <Reveal>
-          <p className="eyebrow">Add-ons</p>
-          <h2 className="display text-[clamp(1.7rem,3.2vw,2.4rem)] mt-3">Extend any plan.</h2>
-        </Reveal>
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          {[
-            ["Extra suburb", "$39/mo", "Rank in another suburb's pages beyond your plan's allowance."],
-            ["Extra practice area", "$25/mo", "Add a specialty beyond your plan's limit."],
-            ["Extra exclusivity", "$299/mo", "Lock a second suburb × category combination."],
-          ].map(([t, p, d]) => (
-            <Reveal key={t}>
-              <div className="surface rounded-[var(--radius-card)] p-6 h-full">
-                <p className="text-[14.5px] font-medium">{t}</p>
-                <p className="display text-[24px] text-brand-400 mt-2">{p}</p>
-                <p className="text-[13px] leading-relaxed text-paper-500 mt-3">{d}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
 
       {/* -------------------------------------------------------------- FAQ */}
       <section className="mx-auto max-w-[1240px] px-5 py-14 edge-t">

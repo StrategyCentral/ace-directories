@@ -73,7 +73,7 @@ export default async function SiteFooter() {
 
       <div className="edge-t">
         <div className="mx-auto max-w-[1240px] px-5 py-6 flex flex-col sm:flex-row gap-3 justify-between text-[12px] text-paper-600">
-          <p>© {new Date().getFullYear()} {SITE.name}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {SITE.name}. Operated by {SITE.entity}, ABN {SITE.abn}.</p>
           <div className="flex flex-wrap gap-5">
             <Link href="/terms" className="hover:text-paper-300">Terms</Link>
             <Link href="/privacy" className="hover:text-paper-300">Privacy</Link>
