@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const supabase = db();
   const [{ data: plan }, { data: listing }] = await Promise.all([
     supabase.from("plans").select("*").eq("code", planCode).maybeSingle(),
-    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id,suburb_id").eq("id", listingId).maybeSingle(),
+    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id,suburb_id,source").eq("id", listingId).maybeSingle(),
   ]);
 
   if (!plan) return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
@@ -86,7 +86,10 @@ export async function POST(req: Request) {
     if (picked[code] > 0 && price) addonLines.push({ price, quantity: picked[code] });
   }
 
-  const founder = await getFounder();
+  // Our own test listing checks out free on a separate coupon, so testing never
+  // costs money or uses up one of the founding places.
+  const testListing = listing.source === "ace_test_seed";
+  const founder = testListing ? null : await getFounder();
   const useFounder = Boolean(founder?.active);
   const meta = {
     listing_id: listingId, plan_code: planCode, claim_id: claimId ?? "",
@@ -123,7 +126,9 @@ export async function POST(req: Request) {
       payment_method_types: ["card"],
       // The founding-firm rate applies itself while places remain; otherwise
       // the buyer can enter a code. Stripe does not allow both on one session.
-      ...(useFounder ? { discounts: [{ coupon: founder!.coupon }] } : { allow_promotion_codes: true }),
+      ...(testListing
+        ? { discounts: [{ coupon: "ALDTEST100" }] }
+        : useFounder ? { discounts: [{ coupon: founder!.coupon }] } : { allow_promotion_codes: true }),
       // The operating entity is not registered for GST, so no tax is calculated.
       automatic_tax: { enabled: false },
       billing_address_collection: "required",
