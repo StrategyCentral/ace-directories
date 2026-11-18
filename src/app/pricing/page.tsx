@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPlans, getStats } from "@/lib/queries";
 import { getAddons, getFounder } from "@/lib/addons";
 import { money } from "@/lib/format";
+import Testimonials from "@/components/Testimonials";
 import PageHeader from "@/components/PageHeader";
 import PricingTable from "@/components/PricingTable";
 import Reveal from "@/components/Reveal";
@@ -77,6 +78,8 @@ export default async function PricingPage() {
         )}
       </div>
 
+
+      <Testimonials />
 
       {/* -------------------------------------------------------------- FAQ */}
       <section className="mx-auto max-w-[1240px] px-5 py-14 edge-t">

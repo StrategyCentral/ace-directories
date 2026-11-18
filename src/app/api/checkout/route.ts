@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       billing_address_collection: "required",
       subscription_data: { metadata: meta },
       metadata: meta,
-      success_url: `${SITE.url}/claim/${listing.slug}/done?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${SITE.url}/api/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE.url}/claim/${listing.slug}?cancelled=1`,
     });
 

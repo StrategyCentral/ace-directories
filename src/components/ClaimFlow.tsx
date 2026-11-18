@@ -6,6 +6,8 @@ import type { Plan } from "@/lib/types";
 import { money, cx } from "@/lib/format";
 import { assessEmail } from "@/lib/claim-domain";
 import { sellFor } from "@/content/plans";
+import FounderBanner from "@/components/FounderBanner";
+import PaymentBadges from "@/components/PaymentBadges";
 import { EXCLUSIVE_PLAN, MAX_QTY, founderPrice, type Addon, type Founder } from "@/lib/addon-types";
 
 interface ListingLite {
@@ -261,24 +263,9 @@ export default function ClaimFlow({
               </div>
 
               {founder?.active && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 rounded-[var(--radius-card)] border border-gold-500/45 bg-gradient-to-r from-gold-500/[0.14] to-gold-500/[0.03] px-5 py-4
-                             flex items-center justify-between gap-4 flex-wrap"
-                >
-                  <div>
-                    <p className="text-[14px] font-medium text-gold-300">
-                      Founding firm rate: {founder.percent}% off for your first {Math.round(founder.months / 12)} years
-                    </p>
-                    <p className="text-[12.5px] text-paper-400 mt-1">
-                      For the first {founder.cap} firms to claim. It is applied at checkout, no code needed, and returns
-                      to the standard price after {founder.months} months.
-                    </p>
-                  </div>
-                  <p className="text-[12px] text-gold-300 tabular whitespace-nowrap">
-                    <span className="text-[20px]">{founder.remaining}</span> of {founder.cap} places left
-                  </p>
-                </motion.div>
+                <div className="mt-6">
+                  <FounderBanner founder={founder} compact featuredMonthly={plans.find((p) => p.code === "featured")?.monthly_price} />
+                </div>
               )}
 
               {cancelled && !downsellSeen && (
@@ -598,8 +585,10 @@ export default function ClaimFlow({
                 )}
               </motion.button>
 
-              <ul className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-[11.5px] text-paper-500">
-                {["Secure payment by Stripe", "Cancel any time from your dashboard", "Live the moment payment clears"].map((t) => (
+              <PaymentBadges className="mt-5" />
+
+              <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-[11.5px] text-paper-500">
+                {["Cancel any time from your dashboard", "No setup fee", "Live the moment payment clears"].map((t) => (
                   <li key={t} className="flex items-center gap-1.5">
                     <span className="text-brand-400">✓</span>{t}
                   </li>

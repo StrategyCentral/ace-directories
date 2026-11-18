@@ -16,6 +16,7 @@ import ActivityPanel from "@/components/ActivityPanel";
 import FirmReviews from "@/components/FirmReviews";
 import TierBadge from "@/components/TierBadge";
 import HideToggle from "@/components/HideToggle";
+import TestimonialForm from "@/components/TestimonialForm";
 import { isTestListing } from "@/lib/test-listing";
 
 export const dynamic = "force-dynamic";
@@ -179,6 +180,10 @@ export default async function DashboardPage() {
             </div>
 
             <ProfileEditor listing={l} areas={areas} />
+
+            <div className="mt-8">
+              <TestimonialForm listingId={l.id} />
+            </div>
 
             <FirmReviews
               reviews={(reviewRows ?? []).filter((r) => r.listing_id === l.id)}
