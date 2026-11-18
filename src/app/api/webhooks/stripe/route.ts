@@ -43,6 +43,31 @@ export async function POST(req: Request) {
         const claimId = session.metadata?.claim_id || null;
         if (!listingId) break;
 
+        // Only a verified claim on an unowned listing (or a retry of the
+        // session that already owns it) may set the tier and Stripe ids.
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        const { data: current } = await supabase
+          .from("lawyers").select("is_claimed,stripe_subscription_id").eq("id", listingId).maybeSingle();
+        if (!current) break;
+        const isRetry = Boolean(subId && current.stripe_subscription_id === subId);
+        if (!isRetry) {
+          const ownedElsewhere = Boolean(current.is_claimed && current.stripe_subscription_id);
+          const { data: claim } = claimId
+            ? await supabase.from("claims").select("listing_id,status,verified_at").eq("id", claimId).maybeSingle()
+            : { data: null };
+          const claimOk = Boolean(
+            claim && claim.listing_id === listingId && claim.verified_at &&
+            ["awaiting_payment", "expired", "completed"].includes(claim.status),
+          );
+          if (ownedElsewhere || !claimOk) {
+            console.error(
+              "stripe checkout ignored: not a verified claim for this listing — refund it",
+              { session: session.id, listingId, claimId, subscription: subId, ownedElsewhere, claimOk },
+            );
+            break;
+          }
+        }
+
         const tier = PLAN_TIER[planCode] ?? "verified";
         const now = new Date().toISOString();
 
@@ -131,7 +156,16 @@ export async function POST(req: Request) {
         // Plan, add-ons, lawyer profiles and any Suburb Exclusive all follow the
         // subscription. Losing it drops the listing back to a free profile: it
         // stays in the directory, it just loses the paid fields and ranking.
+        // Only the subscription stored on the listing may change it. A stray
+        // subscription carrying someone else's listing_id in its metadata is ignored.
+        let owns = false;
         if (listingId) {
+          const { data: current } = await supabase
+            .from("lawyers").select("stripe_subscription_id").eq("id", listingId).maybeSingle();
+          owns = current?.stripe_subscription_id === sub.id;
+          if (!owns) console.warn("stripe subscription event ignored: not the listing's subscription", { sub: sub.id, listingId });
+        }
+        if (listingId && owns) {
           const gone = event.type === "customer.subscription.deleted";
           await syncEntitlements(gone ? ({ ...sub, status: "canceled" } as Stripe.Subscription) : sub, listingId);
           if (!active) await revalidateListing(listingId);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIp } from "@/lib/client-ip";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/supabase";
 import { reviewVerifyEmail, send } from "@/lib/email";
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
       status: "verifying",
       verify_token: token,
       is_published: false,
-      ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      ip: clientIp(req) === "unknown" ? null : clientIp(req),
       user_agent: req.headers.get("user-agent")?.slice(0, 300) ?? null,
     })
     .select("id")

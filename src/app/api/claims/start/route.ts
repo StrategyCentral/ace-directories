@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIp } from "@/lib/client-ip";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/supabase";
 import { claimVerifyEmail, send } from "@/lib/email";
@@ -29,7 +30,8 @@ export async function POST(req: Request) {
   }
 
   const supabase = db();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const rawIp = clientIp(req);
+  const ip = rawIp === "unknown" ? null : rawIp;
 
   if (ip) {
     const { data: recent } = await supabase.rpc("claims_from_ip", { addr: ip, window_hours: 24 });

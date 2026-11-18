@@ -17,12 +17,27 @@ export default async function AdminReviewsPage() {
   if (!admin) redirect("/dashboard/login");
 
   const supabase = db();
-  const { data: reviews } = await supabase
+  const { data: pendingOrReported } = await supabase
     .from("reviews")
     .select("id,listing_id,author_name,author_email,rating,title,body,matter_type,status,created_at,verified_at,report_reason,used_firm")
     .in("status", ["pending", "reported"])
     .order("created_at", { ascending: true })
     .limit(100);
+
+  // Live reviews someone has reported since the last decision: a single report
+  // no longer takes a review down, so it has to show up here instead.
+  const { data: flaggedLive } = await supabase
+    .from("reviews")
+    .select("id,listing_id,author_name,author_email,rating,title,body,matter_type,status,created_at,verified_at,report_reason,used_firm,reported_at,moderated_at")
+    .eq("status", "approved")
+    .not("reported_at", "is", null)
+    .order("reported_at", { ascending: true })
+    .limit(100);
+  const reviews = [...(pendingOrReported ?? [])];
+  for (const r of flaggedLive ?? []) {
+    if (r.moderated_at && new Date(r.moderated_at) >= new Date(r.reported_at)) continue;
+    reviews.push({ ...r, status: "reported" });
+  }
 
   const ids = [...new Set((reviews ?? []).map((r) => r.listing_id))];
   const { data: listings } = ids.length

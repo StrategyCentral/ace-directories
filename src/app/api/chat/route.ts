@@ -5,13 +5,20 @@ import { db } from "@/lib/supabase";
 import { getPracticeAreas } from "@/lib/queries";
 import { CRISIS_PATTERNS, MADDIE, systemPrompt } from "@/lib/agent/persona";
 import { TOOLS, runTool, type FirmCard } from "@/lib/agent/tools";
+import { clientIp } from "@/lib/client-ip";
+import { rateLimited } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MODEL = "claude-sonnet-5";
 const MAX_TURNS = 24;          // a conversation this long is a human's job
-const MAX_PER_HOUR = 40;       // per IP
+const MAX_PER_HOUR = 40;       // new conversations per IP
+const MAX_INPUT = 2000;        // characters in one user message
+const MAX_SESSION_MESSAGES = 30; // user messages in one conversation
+// Per-message limits (in memory): every message is a paid model call.
+const IP_MSGS = { max: 30, windowMs: 10 * 60_000 };
+const SESSION_MSGS = { max: 8, windowMs: 60_000 };
 
 const anthropic = () => {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -22,24 +29,30 @@ const anthropic = () => {
 const hashIp = (ip: string) =>
   createHash("sha256").update(ip + (process.env.JWT_SECRET ?? "")).digest("hex").slice(0, 32);
 
-type Msg = { role: "user" | "assistant"; content: string | Anthropic.ContentBlockParam[] };
+type Msg = { role?: unknown; content?: unknown };
 
 export async function POST(req: Request) {
-  let body: { sessionKey?: string; messages?: Msg[] };
+  let body: { sessionKey?: string; message?: unknown; messages?: Msg[] };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  // Only the newest user message is taken from the client. The conversation so
+  // far comes from our own log, so a caller cannot feed the model forged
+  // assistant or tool turns, or a huge history, at our expense.
   const sessionKey = String(body.sessionKey ?? "").slice(0, 64);
-  const history = Array.isArray(body.messages) ? body.messages.slice(-MAX_TURNS) : [];
-  if (!sessionKey || history.length === 0) {
+  const sent = Array.isArray(body.messages) ? body.messages : [];
+  const last = sent[sent.length - 1];
+  const rawText =
+    typeof body.message === "string" ? body.message
+    : last && last.role === "user" && typeof last.content === "string" ? last.content
+    : "";
+  const lastText = rawText.trim().slice(0, MAX_INPUT);
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(sessionKey) || !lastText) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-
-  const last = history[history.length - 1];
-  const lastText = typeof last?.content === "string" ? last.content : "";
 
   // Crisis checks run before the model, not after. If someone has just said they
   // want to die, the right response is a phone number in under a second — not
@@ -54,10 +67,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const ipHash = hashIp(
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown",
-  );
-  if (await overLimit(ipHash)) {
+  const ip = clientIp(req);
+  const ipHash = hashIp(ip);
+  if (
+    rateLimited(`chat:ip:${ip}`, IP_MSGS.max, IP_MSGS.windowMs) ||
+    rateLimited(`chat:s:${sessionKey}`, SESSION_MSGS.max, SESSION_MSGS.windowMs) ||
+    (await overLimit(ipHash))
+  ) {
     return NextResponse.json(
       { reply: "I've hit my limit for the hour, sorry. Try the enquiry form and someone will come back to you.", firms: [] },
       { status: 429 },
@@ -70,10 +86,17 @@ export async function POST(req: Request) {
     today: new Date().toLocaleDateString("en-AU", { dateStyle: "long", timeZone: "Australia/Melbourne" }),
   });
 
-  const messages: Anthropic.MessageParam[] = history.map((m) => ({
-    role: m.role,
-    content: m.content as Anthropic.MessageParam["content"],
-  }));
+  const past = await loadHistory(sessionKey);
+  if (past.userCount >= MAX_SESSION_MESSAGES) {
+    return NextResponse.json({
+      reply:
+        "We've covered a lot, so it's time a person picked this up. Use the enquiry " +
+        "form or email support@aussielawyerdirectory.com.au and someone will come back to you.",
+      firms: [],
+      escalated: true,
+    });
+  }
+  const messages: Anthropic.MessageParam[] = [...past.turns, { role: "user", content: lastText }];
 
   let firms: FirmCard[] = [];
   let escalated = false;
@@ -148,6 +171,38 @@ export async function GET() {
   return NextResponse.json({ greeting: MADDIE.greeting, name: MADDIE.name, label: MADDIE.label });
 }
 
+/* ------------------------------------------------------------------ history */
+
+/** The conversation so far, from our own log: plain text turns only. */
+async function loadHistory(sessionKey: string): Promise<{ turns: Anthropic.MessageParam[]; userCount: number }> {
+  try {
+    const { data: conv } = await db()
+      .from("agent_conversations").select("id").eq("session_key", sessionKey).maybeSingle();
+    const convId = (conv as { id: string } | null)?.id;
+    if (!convId) return { turns: [], userCount: 0 };
+    const [{ data: rows }, { count }] = await Promise.all([
+      db().from("agent_messages").select("role,content")
+        .eq("conv_id", convId).in("role", ["user", "assistant"])
+        .order("created_at", { ascending: false }).limit(MAX_TURNS - 1),
+      db().from("agent_messages").select("id", { count: "exact", head: true })
+        .eq("conv_id", convId).eq("role", "user"),
+    ]);
+    const turns: Anthropic.MessageParam[] = [];
+    for (const r of ((rows ?? []) as { role: "user" | "assistant"; content: string }[]).reverse()) {
+      const prev = turns[turns.length - 1];
+      if (prev && prev.role === r.role) prev.content = `${prev.content as string}\n\n${r.content}`;
+      else turns.push({ role: r.role, content: r.content });
+    }
+    // The model call must start with the user and alternate; the new message is a user turn.
+    while (turns.length && turns[0].role !== "user") turns.shift();
+    if (turns.length && turns[turns.length - 1].role === "user") turns.pop();
+    return { turns, userCount: count ?? 0 };
+  } catch (e) {
+    console.error("chat history load failed", e);
+    return { turns: [], userCount: 0 };
+  }
+}
+
 /* ------------------------------------------------------------------ logging */
 
 async function overLimit(ipHash: string): Promise<boolean> {
@@ -172,7 +227,7 @@ async function log(
   extra?: { firms: FirmCard[]; escalated: boolean },
 ) {
   try {
-    const ipHash = hashIp(req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
+    const ipHash = hashIp(clientIp(req));
     const { data: existing } = await db()
       .from("agent_conversations")
       .select("id")

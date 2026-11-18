@@ -7,7 +7,11 @@ import { db } from "./supabase";
  * unsubscribing never needs a login. Suppression blocks everything except the
  * messages a person has just asked for or that their account depends on.
  */
-const secret = () => process.env.JWT_SECRET || "dev-secret";
+const secret = () => {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error("JWT_SECRET is not set");
+  return s;
+};
 
 export const normalise = (email: string) => email.trim().toLowerCase();
 
