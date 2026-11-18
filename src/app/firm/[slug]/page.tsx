@@ -216,7 +216,7 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
                 />
                 <Row
                   label="Email"
-                  value={paid && listing.email ? listing.email : <Locked slug={listing.slug} />}
+                  value={paid ? (listing.email ? listing.email : <span className="text-paper-600">Use the enquiry form</span>) : <Locked slug={listing.slug} />}
                 />
                 <Row
                   label="Opening hours"

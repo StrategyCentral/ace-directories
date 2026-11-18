@@ -13,11 +13,13 @@ import { db } from "./supabase";
  */
 export async function revalidateListing(listingId: string): Promise<void> {
   try {
-    const { data } = await db()
+    const { data, error } = await db()
       .from("lawyers")
-      .select("slug,state,practice_areas,extra_suburb_ids,parent_listing_id,suburbs(slug)")
+      .select("slug,state,practice_areas,extra_suburb_ids,parent_listing_id,suburbs!lawyers_suburb_id_fkey(slug)")
       .eq("id", listingId)
       .maybeSingle();
+    // A failed lookup used to return null silently and skip every refresh.
+    if (error) throw new Error(error.message);
     const l = data as unknown as {
       slug: string;
       state: string | null;

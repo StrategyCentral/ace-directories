@@ -26,7 +26,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: { searchParams: Promise<{ built?: string }> }) {
+  const { built } = await searchParams;
   const session = await getSession();
   if (!session) redirect("/dashboard/login");
 
@@ -119,6 +122,14 @@ export default async function DashboardPage() {
       />
 
       <div className="mx-auto max-w-[1240px] px-5 pb-16 space-y-10">
+        {built === "1" && (
+          <div className="rounded-2xl border border-brand-500/40 bg-brand-500/[0.08] px-6 py-4">
+            <p className="text-[14.5px] font-medium">Your profile is saved and live.</p>
+            <p className="text-[13px] text-paper-400 mt-1">
+              It can take a few seconds to show on your public page. Everything below can be changed at any time.
+            </p>
+          </div>
+        )}
         {rows.map((l) => (
           <section key={l.id} className={"surface rounded-2xl p-6 md:p-8" + (isTestListing(l) ? " test-glow-card" : "")}>
             {isTestListing(l) && (
