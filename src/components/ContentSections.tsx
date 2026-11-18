@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/jsonld";
 import Link from "next/link";
 import type { PracticeContent } from "@/content/practice-content";
 import type { StateContext } from "@/content/states";
@@ -178,7 +179,7 @@ export function FaqSchema({ faqs }: { faqs: { q: string; a: string }[] }) {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
+        __html: jsonLd({
           "@context": "https://schema.org",
           "@type": "FAQPage",
           mainEntity: faqs.map((f) => ({

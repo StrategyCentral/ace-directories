@@ -21,7 +21,7 @@ const SECTIONS: [string, string][] = [
   ["What we remove",
    "Reviews that are fake or incentivised; reviews from people who were not clients; content that identifies third parties or discloses someone else's private information; material that is defamatory or alleges criminal conduct without foundation; and anything that would prejudice a matter still before a court."],
   ["Reporting a review",
-   "Anyone can report a review from the profile page. A reported review is unpublished immediately while we look at it, rather than left up during the dispute. If it checks out, it goes back up. If it doesn't, it stays down."],
+   "Anyone can report a review from the profile page. Every report goes to a moderator. A review reported by several different people is unpublished while we look at it. If it checks out, it goes back up. If it doesn't, it stays down."],
   ["Reviews are not legal advice about a lawyer's competence",
    "A review describes one client's experience. It is not an assessment of professional conduct. If you believe a lawyer has acted improperly, the legal services regulator in their state handles complaints — and that is a more effective route than a review."],
 ];

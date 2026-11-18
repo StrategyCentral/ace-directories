@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIp } from "@/lib/client-ip";
 import { createHash } from "crypto";
 import { db } from "@/lib/supabase";
 
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       return new NextResponse(null, { status: 204 });
     }
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+    const ip = clientIp(req);
     const uaHash = createHash("sha256")
       .update(`${ip}|${ua}|${new Date().toISOString().slice(0, 10)}`)
       .digest("hex")
