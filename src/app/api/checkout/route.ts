@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { stripe, stripeConfigured } from "@/lib/stripe";
 import { SITE } from "@/lib/site";
+import { exclusiveHolder, getAddons, getFounder } from "@/lib/addons";
+import { EXCLUSIVE_PLAN, MAX_QTY, type AddonSelection } from "@/lib/addon-types";
 
 export const runtime = "nodejs";
 
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
   const supabase = db();
   const [{ data: plan }, { data: listing }] = await Promise.all([
     supabase.from("plans").select("*").eq("code", planCode).maybeSingle(),
-    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id").eq("id", listingId).maybeSingle(),
+    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id,suburb_id").eq("id", listingId).maybeSingle(),
   ]);
 
   if (!plan) return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
@@ -47,6 +49,49 @@ export async function POST(req: Request) {
       .update({ selected_plan: planCode, status: "awaiting_payment" })
       .eq("id", claimId);
   }
+
+  // ---- order bumps: add-ons bought with the plan
+  const want = (body.addons ?? {}) as AddonSelection;
+  const addons = await getAddons();
+  const addonLines: { price: string; quantity: number }[] = [];
+  const clamp = (n: unknown, max: number) => Math.max(0, Math.min(max, Math.floor(Number(n) || 0)));
+  const picked = {
+    exclusive: want.exclusive ? String(want.exclusive) : "",
+    extra_suburb: clamp(want.extra_suburb, MAX_QTY.extra_suburb),
+    team_profile: clamp(want.team_profile, MAX_QTY.team_profile),
+  };
+  const priceOf = (code: string) => {
+    const a = addons.find((x) => x.code === code);
+    return (interval === "year" ? a?.stripe_price_yearly : a?.stripe_price_monthly) ?? null;
+  };
+
+  if (picked.exclusive) {
+    if (planCode !== EXCLUSIVE_PLAN) {
+      return NextResponse.json({ error: "Suburb Exclusive is available on the Featured plan" }, { status: 400 });
+    }
+    if (!listing.suburb_id) {
+      return NextResponse.json({ error: "We need a suburb on this listing before it can hold an exclusive" }, { status: 400 });
+    }
+    const { data: area } = await supabase.from("practice_areas").select("slug").eq("slug", picked.exclusive).maybeSingle();
+    if (!area) return NextResponse.json({ error: "Unknown practice area" }, { status: 400 });
+    const holder = await exclusiveHolder(listing.suburb_id, picked.exclusive);
+    if (holder && holder !== listing.id) {
+      return NextResponse.json({ error: "That Suburb Exclusive has just been taken. Pick another practice area." }, { status: 409 });
+    }
+    const price = priceOf("exclusive");
+    if (price) addonLines.push({ price, quantity: 1 });
+  }
+  for (const code of ["extra_suburb", "team_profile"] as const) {
+    const price = priceOf(code);
+    if (picked[code] > 0 && price) addonLines.push({ price, quantity: picked[code] });
+  }
+
+  const founder = await getFounder();
+  const useFounder = Boolean(founder?.active);
+  const meta = {
+    listing_id: listingId, plan_code: planCode, claim_id: claimId ?? "",
+    exclusive_practice: picked.exclusive, founder: useFounder ? "1" : "",
+  };
 
   const priceId = interval === "year" ? plan.stripe_price_yearly : plan.stripe_price_monthly;
   const unitAmount = interval === "year" ? plan.yearly_price : plan.monthly_price;
@@ -73,16 +118,17 @@ export async function POST(req: Request) {
                 },
               },
             },
+        ...addonLines,
       ],
       payment_method_types: ["card"],
-      allow_promotion_codes: true,
+      // The founding-firm rate applies itself while places remain; otherwise
+      // the buyer can enter a code. Stripe does not allow both on one session.
+      ...(useFounder ? { discounts: [{ coupon: founder!.coupon }] } : { allow_promotion_codes: true }),
       // The operating entity is not registered for GST, so no tax is calculated.
       automatic_tax: { enabled: false },
       billing_address_collection: "required",
-      subscription_data: {
-        metadata: { listing_id: listingId, plan_code: planCode, claim_id: claimId ?? "" },
-      },
-      metadata: { listing_id: listingId, plan_code: planCode, claim_id: claimId ?? "" },
+      subscription_data: { metadata: meta },
+      metadata: meta,
       success_url: `${SITE.url}/claim/${listing.slug}/done?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE.url}/claim/${listing.slug}?cancelled=1`,
     });

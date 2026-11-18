@@ -15,7 +15,7 @@ export async function revalidateListing(listingId: string): Promise<void> {
   try {
     const { data } = await db()
       .from("lawyers")
-      .select("slug,state,practice_areas,suburbs(slug)")
+      .select("slug,state,practice_areas,extra_suburb_ids,parent_listing_id,suburbs(slug)")
       .eq("id", listingId)
       .maybeSingle();
     const l = data as unknown as {
@@ -23,16 +23,27 @@ export async function revalidateListing(listingId: string): Promise<void> {
       state: string | null;
       practice_areas: string[] | null;
       suburbs: { slug: string } | null;
+      extra_suburb_ids: string[] | null;
+      parent_listing_id: string | null;
     } | null;
     if (!l) return;
 
     const places = [l.suburbs?.slug, l.state?.toLowerCase()].filter(Boolean) as string[];
+    if (l.extra_suburb_ids?.length) {
+      const { data: extra } = await db().from("suburbs").select("slug").in("id", l.extra_suburb_ids);
+      for (const s of extra ?? []) places.push(s.slug);
+    }
     const paths = new Set<string>([`/firm/${l.slug}`]);
     for (const place of places) {
       paths.add(`/lawyers/${place}`);
       for (const pa of l.practice_areas ?? []) paths.add(`/${pa}/${place}`);
     }
     for (const pa of l.practice_areas ?? []) paths.add(`/${pa}`);
+
+    if (l.parent_listing_id) {
+      const { data: parent } = await db().from("lawyers").select("slug").eq("id", l.parent_listing_id).maybeSingle();
+      if (parent?.slug) paths.add(`/firm/${parent.slug}`);
+    }
 
     for (const p of paths) revalidatePath(p);
   } catch (e) {

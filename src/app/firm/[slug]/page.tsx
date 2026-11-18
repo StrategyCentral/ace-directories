@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  getListing, getListingReviews, getNearbyListings, getPracticeAreas, getRatingBreakdown,
+  getListing, getListingReviews, getNearbyListings, getPracticeAreas, getRatingBreakdown, getTeam, getListingById,
 } from "@/lib/queries";
 import { isPaid } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
@@ -60,11 +60,13 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
   const listing = await getListing(slug);
   if (!listing || listing.status !== "live") notFound();
 
-  const [nearby, allAreas, reviews, breakdown] = await Promise.all([
+  const [nearby, allAreas, reviews, breakdown, team, parentFirm] = await Promise.all([
     getNearbyListings(listing, 4),
     getPracticeAreas(),
     getListingReviews(listing.id),
     getRatingBreakdown(listing.id),
+    listing.parent_listing_id ? Promise.resolve([]) : getTeam(listing.id),
+    listing.parent_listing_id ? getListingById(listing.parent_listing_id) : Promise.resolve(null),
   ]);
 
   const paid = isPaid(listing.tier);
@@ -93,6 +95,12 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
         meta={
           <div className="flex flex-wrap items-center gap-3">
             <TierBadge tier={listing.tier} claimed={listing.is_claimed} />
+            {parentFirm && parentFirm.status === "live" && (
+              <span className="text-[13px] text-paper-400">
+                {listing.role_title ? `${listing.role_title} at ` : "Lawyer at "}
+                <Link href={`/firm/${parentFirm.slug}`} className="text-brand-400 hover:text-brand-200">{parentFirm.full_name}</Link>
+              </span>
+            )}
             {listing.review_count > 0 && (
               <span className="inline-flex items-center gap-2 text-[13px] text-paper-400">
                 <Stars value={listing.review_avg} />
@@ -226,6 +234,31 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
                 )}
               </dl>
             </section>
+
+            {team.length > 0 && (
+              <section id="team" className="scroll-mt-24">
+                <p className="eyebrow mb-3">Our lawyers</p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {team.map((m) => (
+                    <Link key={m.id} href={`/firm/${m.slug}`}
+                      className="surface lift rounded-[var(--radius-card)] p-4 flex items-center gap-3.5">
+                      {m.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.photo_url} alt="" className="size-12 rounded-full object-cover shrink-0" loading="lazy" />
+                      ) : (
+                        <span className="size-12 rounded-full bg-brand-500/15 text-brand-200 grid place-items-center text-[15px] shrink-0">
+                          {m.full_name.slice(0, 1)}
+                        </span>
+                      )}
+                      <span>
+                        <span className="block text-[14px] text-paper-100">{m.full_name}</span>
+                        <span className="block text-[12.5px] text-paper-500">{m.role_title ?? "Lawyer"}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section id="reviews" className="scroll-mt-24">
               <p className="eyebrow mb-3">Reviews</p>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { money, cx } from "@/lib/format";
 import { assessEmail } from "@/lib/claim-domain";
 import { sellFor } from "@/content/plans";
+import { EXCLUSIVE_PLAN, MAX_QTY, founderPrice, type Addon, type Founder } from "@/lib/addon-types";
 
 interface ListingLite {
   id: string;
@@ -33,10 +34,19 @@ export default function ClaimFlow({
   listing,
   plans,
   existingClaim,
+  addons = [],
+  founder = null,
+  areas = [],
+  cancelled = false,
 }: {
   listing: ListingLite;
   plans: Plan[];
   existingClaim: ExistingClaim | null;
+  addons?: Addon[];
+  founder?: Founder | null;
+  areas?: { slug: string; name: string }[];
+  /** They opened Stripe and came back without paying. */
+  cancelled?: boolean;
 }) {
   const [step, setStep] = useState<1 | 2 | "sent">(
     existingClaim ? (existingClaim.expires_at ? 2 : "sent") : 1,
@@ -48,6 +58,31 @@ export default function ClaimFlow({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState("");
+
+  // Order bumps: add-ons bought with the plan.
+  const [exclusive, setExclusive] = useState("");
+  const [extraSuburbs, setExtraSuburbs] = useState(0);
+  const [teamProfiles, setTeamProfiles] = useState(0);
+  const [taken, setTaken] = useState<string[]>([]);
+  const [downsellSeen, setDownsellSeen] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/exclusive?listing=${listing.id}`)
+      .then((r) => r.json()).then((j) => setTaken(j.taken ?? [])).catch(() => undefined);
+  }, [listing.id]);
+
+  // Suburb Exclusive only exists on Featured, so drop it if they move off.
+  useEffect(() => { if (plan !== EXCLUSIVE_PLAN) setExclusive(""); }, [plan]);
+
+  const addon = (code: string) => addons.find((a) => a.code === code);
+  const addonPrice = (code: string) => {
+    const a = addon(code);
+    return a ? (yearly ? a.yearly_price : a.monthly_price) : 0;
+  };
+  const addonsTotal =
+    (exclusive ? addonPrice("exclusive") : 0) +
+    extraSuburbs * addonPrice("extra_suburb") +
+    teamProfiles * addonPrice("team_profile");
 
   // Same function the API uses to decide, so the hint cannot promise one thing
   // and the server do another.
@@ -96,6 +131,7 @@ export default function ClaimFlow({
           listing_id: listing.id,
           plan_code: plan,
           interval: yearly ? "year" : "month",
+          addons: { exclusive: exclusive || null, extra_suburb: extraSuburbs, team_profile: teamProfiles },
         }),
       });
       const json = await res.json();
@@ -224,9 +260,53 @@ export default function ClaimFlow({
                 </button>
               </div>
 
+              {founder?.active && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 rounded-[var(--radius-card)] border border-gold-500/45 bg-gradient-to-r from-gold-500/[0.14] to-gold-500/[0.03] px-5 py-4
+                             flex items-center justify-between gap-4 flex-wrap"
+                >
+                  <div>
+                    <p className="text-[14px] font-medium text-gold-300">
+                      Founding firm rate: {founder.percent}% off for your first {Math.round(founder.months / 12)} years
+                    </p>
+                    <p className="text-[12.5px] text-paper-400 mt-1">
+                      For the first {founder.cap} firms to claim. It is applied at checkout, no code needed, and returns
+                      to the standard price after {founder.months} months.
+                    </p>
+                  </div>
+                  <p className="text-[12px] text-gold-300 tabular whitespace-nowrap">
+                    <span className="text-[20px]">{founder.remaining}</span> of {founder.cap} places left
+                  </p>
+                </motion.div>
+              )}
+
+              {cancelled && !downsellSeen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 rounded-[var(--radius-card)] border border-brand-500/40 bg-brand-500/[0.07] px-5 py-4
+                             flex items-center justify-between gap-4 flex-wrap"
+                >
+                  <div>
+                    <p className="text-[14px] font-medium">Not ready to commit to that today?</p>
+                    <p className="text-[12.5px] text-paper-400 mt-1">
+                      Start on Verified, month to month. You can move up, or cancel, any time from your dashboard.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setPlan("verified"); setYearly(false); setExclusive(""); setExtraSuburbs(0); setTeamProfiles(0); setDownsellSeen(true); }}
+                    className="btn btn-ghost !py-2 !px-4 !text-[12.5px]"
+                  >
+                    Switch me to Verified monthly
+                  </button>
+                </motion.div>
+              )}
+
               <div className="mt-6 grid gap-3">
                 {plans.map((p, idx) => {
-                  const price = yearly ? p.yearly_price : p.monthly_price;
+                  const listPrice = yearly ? p.yearly_price : p.monthly_price;
+                  const price = founderPrice(listPrice, founder);
                   const selected = plan === p.code;
                   const sell = sellFor(p.code);
                   const saving = p.monthly_price * 12 - p.yearly_price;
@@ -298,7 +378,11 @@ export default function ClaimFlow({
                             <span className="text-paper-600 text-[12px]">{yearly ? " /yr" : " /mo"}</span>
                           </p>
                           <p className="text-[11.5px] mt-0.5 h-[16px]">
-                            {yearly && saving > 0 ? (
+                            {founder?.active ? (
+                              <span className="text-gold-400">
+                                <s className="text-paper-600">{money(listPrice)}</s> founding rate
+                              </span>
+                            ) : yearly && saving > 0 ? (
                               <span className="text-gold-400">You save {money(saving)} a year</span>
                             ) : (
                               <span className="text-paper-600">billed monthly</span>
@@ -367,10 +451,96 @@ export default function ClaimFlow({
 
               {error && <p className="text-[12.5px] text-red-400 mt-4">{error}</p>}
 
+              {addons.length > 0 && (
+                <div className="mt-6">
+                  <p className="eyebrow mb-3">Add to your plan</p>
+                  <div className="grid gap-2.5">
+                    {addon("exclusive") && (
+                      <motion.div
+                        layout
+                        className={cx(
+                          "rounded-[var(--radius-card)] border px-5 py-4 transition-colors",
+                          exclusive ? "border-gold-500/60 bg-gold-500/[0.07]" : "border-dashed border-white/[0.14] bg-white/[0.015]",
+                          plan !== EXCLUSIVE_PLAN && "opacity-60",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                          <div className="max-w-[560px]">
+                            <p className="text-[14px] font-medium flex items-center gap-2 flex-wrap">
+                              <span className="text-gold-400">★</span> Suburb Exclusive
+                              <span className="text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded border border-gold-500/40 text-gold-300">
+                                One firm only
+                              </span>
+                            </p>
+                            <p className="text-[12.5px] leading-relaxed text-paper-400 mt-1.5">
+                              Hold the number one position for one practice area in {listing.suburb ?? "your suburb"}.
+                              No other firm can appear above you on that page, and nobody else can buy it while you hold it.
+                            </p>
+                          </div>
+                          <p className="text-[14px] tabular whitespace-nowrap">
+                            +{money(addonPrice("exclusive"))}
+                            <span className="text-paper-600 text-[12px]">{yearly ? " /yr" : " /mo"}</span>
+                          </p>
+                        </div>
+                        {plan === EXCLUSIVE_PLAN ? (
+                          <select
+                            value={exclusive}
+                            onChange={(e) => setExclusive(e.target.value)}
+                            aria-label="Practice area to lock"
+                            className="mt-3.5 w-full sm:w-auto rounded-lg bg-white/[0.04] edge px-3 py-2.5 text-[13px] text-paper-100 outline-none focus:border-gold-500/60"
+                          >
+                            <option value="">No thanks</option>
+                            {areas.map((a) => (
+                              <option key={a.slug} value={a.slug} disabled={taken.includes(a.slug)}>
+                                {a.name}{taken.includes(a.slug) ? " (taken)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-[12px] text-paper-500 mt-3">Available with Featured.</p>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {([
+                      ["extra_suburb", "Extra suburbs", "Appear on the pages of more suburbs you serve. You choose them in your dashboard.", extraSuburbs, setExtraSuburbs],
+                      ["team_profile", "Lawyer profiles", "Give each lawyer their own profile page, linked to the firm and shown in search.", teamProfiles, setTeamProfiles],
+                    ] as const).map(([code, title, blurb, qty, setQty]) =>
+                      addon(code) ? (
+                        <div
+                          key={code}
+                          className={cx(
+                            "rounded-[var(--radius-card)] border px-5 py-4 flex items-center justify-between gap-4 flex-wrap transition-colors",
+                            qty > 0 ? "border-brand-500/50 bg-brand-500/[0.06]" : "border-dashed border-white/[0.14] bg-white/[0.015]",
+                          )}
+                        >
+                          <div className="max-w-[460px]">
+                            <p className="text-[14px] font-medium">{title}</p>
+                            <p className="text-[12.5px] leading-relaxed text-paper-400 mt-1">{blurb}</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <p className="text-[13px] tabular text-paper-300 whitespace-nowrap">
+                              {money(addonPrice(code))}<span className="text-paper-600 text-[12px]">{yearly ? " /yr" : " /mo"} each</span>
+                            </p>
+                            <div className="flex items-center rounded-lg edge overflow-hidden">
+                              <button type="button" aria-label={`Fewer ${title}`} onClick={() => setQty(Math.max(0, qty - 1))}
+                                className="px-3 py-1.5 text-paper-300 hover:bg-white/[0.06]">−</button>
+                              <span className="w-8 text-center text-[13.5px] tabular">{qty}</span>
+                              <button type="button" aria-label={`More ${title}`} onClick={() => setQty(Math.min(MAX_QTY[code], qty + 1))}
+                                className="px-3 py-1.5 text-paper-300 hover:bg-white/[0.06]">+</button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                </div>
+              )}
+
               {(() => {
                 const chosen = plans.find((x) => x.code === plan) ?? plans[0];
                 if (!chosen) return null;
-                const total = yearly ? chosen.yearly_price : chosen.monthly_price;
+                const total = founderPrice(yearly ? chosen.yearly_price : chosen.monthly_price, founder) + addonsTotal;
                 return (
                   <motion.div
                     layout
@@ -379,7 +549,8 @@ export default function ClaimFlow({
                   >
                     <div>
                       <p className="text-[13.5px] text-paper-100">
-                        {chosen.name}, billed {yearly ? "yearly" : "monthly"}
+                        {chosen.name}{addonsTotal > 0 ? " plus add-ons" : ""}, billed {yearly ? "yearly" : "monthly"}
+                        {founder?.active ? ` at the founding rate` : ""}
                       </p>
                       <p className="text-[12px] text-paper-500 mt-0.5">
                         Renews each {yearly ? "year" : "month"} until you cancel. No setup fee, no minimum term.

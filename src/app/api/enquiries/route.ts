@@ -52,12 +52,12 @@ export async function POST(req: Request) {
     let firmName = "the directory (no firm selected)";
     if (body.listing_id) {
       const { data: l } = await supabase.from("lawyers")
-        .select("full_name,is_claimed").eq("id", String(body.listing_id)).maybeSingle();
+        .select("full_name,is_claimed,parent_listing_id").eq("id", String(body.listing_id)).maybeSingle();
       if (l) {
         firmName = l.full_name;
         if (l.is_claimed) {
           const { data: c } = await supabase.from("claims")
-            .select("email").eq("listing_id", String(body.listing_id)).eq("status", "completed")
+            .select("email").eq("listing_id", String(l.parent_listing_id ?? body.listing_id)).eq("status", "completed")
             .order("completed_at", { ascending: false }).limit(1).maybeSingle();
           if (c?.email) to = c.email;
         }

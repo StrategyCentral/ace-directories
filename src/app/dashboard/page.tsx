@@ -3,7 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/supabase";
-import { getListingActivity, getListingDaily, getPracticeAreas } from "@/lib/queries";
+import { getListingActivity, getListingDaily, getPlans, getPracticeAreas, getSuburbsByIds, getTeam } from "@/lib/queries";
+import { getAddons, getBilling } from "@/lib/addons";
+import { INCLUDED } from "@/lib/addon-types";
+import PlanPanel from "@/components/PlanPanel";
+import SuburbsPanel from "@/components/SuburbsPanel";
+import TeamPanel, { type Member } from "@/components/TeamPanel";
 import type { Listing } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import ProfileEditor from "@/components/ProfileEditor";
@@ -48,13 +53,16 @@ export default async function DashboardPage() {
     );
   }
 
+  const { data: kids } = await supabase.from("lawyers").select("id").in("parent_listing_id", ids);
+  const allIds = [...ids, ...(kids ?? []).map((k) => k.id)];
+
   const [{ data: listings }, areas, { data: enquiries }, { data: reviewRows }] = await Promise.all([
     supabase.from("lawyers").select("*").in("id", ids),
     getPracticeAreas(),
     supabase
       .from("enquiries")
       .select("id,name,email,phone,matter,urgency,created_at,read_at,listing_id")
-      .in("listing_id", ids)
+      .in("listing_id", allIds)
       .order("created_at", { ascending: false })
       .limit(25),
     supabase
@@ -66,7 +74,23 @@ export default async function DashboardPage() {
       .limit(50),
   ]);
 
-  const rows = (listings ?? []) as unknown as Listing[];
+  const rows = ((listings ?? []) as unknown as (Listing & { stripe_subscription_id: string | null })[])
+    .filter((l) => !l.parent_listing_id);
+
+  const [plans, addons] = await Promise.all([getPlans(), getAddons()]);
+  const extras = Object.fromEntries(
+    await Promise.all(
+      rows.map(async (l) => [
+        l.id,
+        {
+          billing: await getBilling(l.stripe_subscription_id),
+          team: (await getTeam(l.id, true)) as unknown as Member[],
+          suburbs: await getSuburbsByIds(l.extra_suburb_ids ?? []),
+        },
+      ]),
+    ),
+  ) as Record<string, { billing: Awaited<ReturnType<typeof getBilling>>; team: Member[]; suburbs: Awaited<ReturnType<typeof getSuburbsByIds>> }>;
+  const areaList = areas.filter((a) => a.slug !== "general-practice").map((a) => ({ slug: a.slug, name: a.name }));
 
   // One activity read per listing — firms want to see the numbers before they
   // care about the edit form.
@@ -122,6 +146,31 @@ export default async function DashboardPage() {
             )}
 
             <ActivityPanel activity={activity[l.id].stats} daily={activity[l.id].daily} />
+
+            <div className="mt-8">
+              <PlanPanel
+                listingId={l.id}
+                suburb={l.suburb}
+                planCode={l.plan_code ?? null}
+                isFounder={Boolean(l.is_founder)}
+                plans={plans.map((p) => ({ code: p.code, name: p.name, monthly_price: p.monthly_price, yearly_price: p.yearly_price }))}
+                addons={addons}
+                areas={areaList}
+                billing={extras[l.id].billing}
+              />
+              <SuburbsPanel
+                listingId={l.id}
+                home={l.suburb}
+                allowance={(INCLUDED[l.plan_code ?? ""]?.suburbs ?? 0) + (l.extra_suburb_slots ?? 0)}
+                initial={extras[l.id].suburbs.map((s) => ({ id: s.id, name: s.name, state: s.state, postcode: s.postcode }))}
+              />
+              <TeamPanel
+                listingId={l.id}
+                allowance={(INCLUDED[l.plan_code ?? ""]?.team ?? 0) + (l.team_slots ?? 0)}
+                members={extras[l.id].team}
+                firmAreas={areaList.filter((a) => (l.practice_areas ?? []).includes(a.slug))}
+              />
+            </div>
 
             <ProfileEditor listing={l} areas={areas} />
 

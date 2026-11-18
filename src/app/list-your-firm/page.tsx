@@ -5,6 +5,7 @@ import PricingTable from "@/components/PricingTable";
 import Reveal from "@/components/Reveal";
 import ValueCalculator from "@/components/ValueCalculator";
 import { getPlans, getStats } from "@/lib/queries";
+import { getAddons, getFounder } from "@/lib/addons";
 import { money } from "@/lib/format";
 
 export const revalidate = 3600;
@@ -43,7 +44,7 @@ const FAQ: [string, string][] = [
 ];
 
 export default async function ListYourFirmPage() {
-  const [plans, stats] = await Promise.all([getPlans(), getStats()]);
+  const [plans, stats, founder, addons] = await Promise.all([getPlans(), getStats(), getFounder(), getAddons()]);
   const from = plans[0];
 
   return (
@@ -127,7 +128,29 @@ export default async function ListYourFirmPage() {
           <h2 className="display text-[clamp(1.7rem,3.2vw,2.4rem)] mt-3">Two plans. Pick how visible you want to be.</h2>
         </Reveal>
         <div className="mt-8">
-          <PricingTable plans={plans} />
+          <PricingTable plans={plans} founder={founder} />
+
+        {addons.length > 0 && (
+          <div className="mt-12">
+            <p className="eyebrow text-center">Add to any plan</p>
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {addons.map((a) => (
+                <div key={a.code} className={"surface rounded-[var(--radius-card)] p-6 " + (a.code === "exclusive" ? "border-gold-500/35 bg-gradient-to-b from-gold-500/[0.07] to-transparent" : "")}>
+                  <p className="text-[14.5px] font-medium">
+                    {a.code === "exclusive" && <span className="text-gold-400">★ </span>}{a.name}
+                  </p>
+                  <p className="display text-[26px] mt-2 tabular">
+                    {money(a.monthly_price)}<span className="text-[12.5px] text-paper-600 font-sans"> /mo{a.code === "exclusive" ? "" : " each"}</span>
+                  </p>
+                  <p className="text-[13px] leading-relaxed text-paper-500 mt-2.5">{a.blurb}</p>
+                  {a.code === "exclusive" && (
+                    <p className="text-[12px] text-gold-300 mt-3">Featured plan only. Not part of the founding rate.</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         </div>
       </section>
 

@@ -6,7 +6,7 @@ const LISTING_FIELDS =
   "id,slug,full_name,entity_type,status,tier,is_claimed,address,suburb,suburb_id,state,postcode," +
   "full_address,lat,lng,phone,email,website,practice_areas,languages,tagline,bio,logo_url,photo_url," +
   "founded_year,team_size,accreditations,socials,review_count,review_avg,profile_score,rank_score," +
-  "view_count,verified_at,original_url";
+  "view_count,verified_at,original_url,extra_suburb_ids,extra_suburb_slots,team_slots,parent_listing_id,role_title,is_founder,plan_code";
 
 /* ------------------------------------------------------------------ taxonomy */
 
@@ -79,7 +79,10 @@ export async function searchListings(args: SearchArgs): Promise<{ rows: Listing[
     .eq("status", "live");
 
   if (args.practice) query = query.contains("practice_areas", [args.practice]);
-  if (args.suburbId) query = query.eq("suburb_id", args.suburbId);
+  // A firm shows in its home suburb and in any extra suburbs its plan covers.
+  if (args.suburbId) {
+    query = query.or(`suburb_id.eq.${args.suburbId},extra_suburb_ids.cs.{${args.suburbId}}`);
+  }
   if (args.state) query = query.eq("state", args.state);
   if (args.q?.trim()) query = query.ilike("search_text", `%${args.q.trim().toLowerCase()}%`);
 
@@ -105,6 +108,27 @@ export async function listingsForCategoryPlace(
   const { rows: exact, total: exactTotal } = await searchListings({
     practice, suburbId: opts.suburbId, state: opts.state, perPage: limit,
   });
+
+  // Suburb Exclusive: the one firm holding this suburb and practice area goes
+  // first, whatever else is on the page. Nobody is removed.
+  if (opts.suburbId) {
+    const { data: ex } = await db().from("exclusivity")
+      .select("listing_id").eq("suburb_id", opts.suburbId).eq("practice_slug", practice)
+      .is("ends_at", null).maybeSingle();
+    if (ex?.listing_id) {
+      let holder = exact.find((r) => r.id === ex.listing_id) ?? null;
+      if (!holder) {
+        const { data } = await db().from("lawyers").select(LISTING_FIELDS)
+          .eq("id", ex.listing_id).eq("status", "live").maybeSingle();
+        holder = (data as unknown as Listing) ?? null;
+      }
+      if (holder) {
+        const rest = exact.filter((r) => r.id !== holder!.id);
+        exact.length = 0;
+        exact.push({ ...holder, exclusive_here: true }, ...rest);
+      }
+    }
+  }
 
   let general: Listing[] = [];
   if (exact.length < limit) {
@@ -324,3 +348,23 @@ export const getPlan = cache(async (code: string): Promise<Plan | null> => {
   const p = data as Plan;
   return { ...p, features: Array.isArray(p.features) ? p.features : [] };
 });
+
+/** Individual lawyer profiles that belong to a firm's listing. */
+export async function getTeam(parentId: string, includeHidden = false): Promise<Listing[]> {
+  let q = db().from("lawyers").select(LISTING_FIELDS).eq("parent_listing_id", parentId)
+    .order("created_at", { ascending: true });
+  q = includeHidden ? q.in("status", ["live", "hidden"]) : q.eq("status", "live");
+  const { data } = await q;
+  return (data as unknown as Listing[]) ?? [];
+}
+
+export async function getSuburbsByIds(ids: string[]): Promise<Suburb[]> {
+  if (!ids.length) return [];
+  const { data } = await db().from("suburbs").select("id,slug,name,state,postcode,lat,lng,is_major,listing_count").in("id", ids);
+  return (data as Suburb[]) ?? [];
+}
+
+export async function getListingById(id: string): Promise<Listing | null> {
+  const { data } = await db().from("lawyers").select(LISTING_FIELDS).eq("id", id).maybeSingle();
+  return (data as unknown as Listing) ?? null;
+}

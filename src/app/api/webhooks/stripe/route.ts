@@ -4,6 +4,7 @@ import { db } from "@/lib/supabase";
 import { revalidateListing } from "@/lib/revalidate-listing";
 import { stripe } from "@/lib/stripe";
 import { claimCompletedEmail, send } from "@/lib/email";
+import { syncEntitlements } from "@/lib/addons";
 
 export const runtime = "nodejs";
 
@@ -78,6 +79,15 @@ export async function POST(req: Request) {
             .eq("id", claimId);
         }
 
+        // Add-ons bought at checkout, and the founding-firm flag.
+        if (session.metadata?.founder === "1" && (session.total_details?.amount_discount ?? 0) > 0) {
+          await supabase.from("lawyers").update({ is_founder: true }).eq("id", listingId);
+        }
+        if (typeof session.subscription === "string") {
+          const sub = await stripe().subscriptions.retrieve(session.subscription);
+          await syncEntitlements(sub, listingId);
+        }
+
         // Badge and ranking change now — don't leave them behind a 7-day cache.
         await revalidateListing(listingId);
 
@@ -118,14 +128,13 @@ export async function POST(req: Request) {
           })
           .eq("stripe_subscription_id", sub.id);
 
-        // Losing the subscription drops the listing back to a free profile —
-        // it stays in the directory, it just loses the paid fields and ranking.
-        if (!active && listingId) {
-          await supabase
-            .from("lawyers")
-            .update({ tier: "free", plan_code: null, rank_score: 50 })
-            .eq("id", listingId);
-          await revalidateListing(listingId);
+        // Plan, add-ons, lawyer profiles and any Suburb Exclusive all follow the
+        // subscription. Losing it drops the listing back to a free profile: it
+        // stays in the directory, it just loses the paid fields and ranking.
+        if (listingId) {
+          const gone = event.type === "customer.subscription.deleted";
+          await syncEntitlements(gone ? ({ ...sub, status: "canceled" } as Stripe.Subscription) : sub, listingId);
+          if (!active) await revalidateListing(listingId);
         }
         break;
       }

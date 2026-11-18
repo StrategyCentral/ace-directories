@@ -36,6 +36,15 @@ export interface Listing {
   view_count: number;
   verified_at: string | null;
   original_url: string | null;
+  extra_suburb_ids?: string[] | null;
+  extra_suburb_slots?: number;
+  team_slots?: number;
+  parent_listing_id?: string | null;
+  role_title?: string | null;
+  is_founder?: boolean;
+  plan_code?: string | null;
+  /** Set at query time: holds the Suburb Exclusive for the page being shown. */
+  exclusive_here?: boolean;
 }
 
 export interface PracticeArea {

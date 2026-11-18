@@ -25,10 +25,10 @@ export default function ListingCard({
         featured && "border-gold-500/25 bg-gradient-to-br from-gold-500/[0.06] to-transparent",
       )}
     >
-      {featured && (
+      {(featured || listing.exclusive_here) && (
         <span className="absolute top-0 right-0 text-[10px] tracking-[0.14em] uppercase
                          bg-gold-500 text-[#1a1406] font-semibold px-3 py-1 rounded-bl-lg">
-          Featured
+          {listing.exclusive_here ? "★ Suburb leader · paid placement" : "Featured"}
         </span>
       )}
 

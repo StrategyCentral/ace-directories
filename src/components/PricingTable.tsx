@@ -6,12 +6,30 @@ import { motion } from "framer-motion";
 import type { Plan } from "@/lib/types";
 import { cx, money } from "@/lib/format";
 import { sellFor } from "@/content/plans";
+import { founderPrice, type Founder } from "@/lib/addon-types";
 
-export default function PricingTable({ plans }: { plans: Plan[] }) {
+export default function PricingTable({ plans, founder = null }: { plans: Plan[]; founder?: Founder | null }) {
   const [yearly, setYearly] = useState(true);
 
   return (
     <div>
+      {founder?.active && (
+        <div className="mx-auto max-w-[920px] mb-7 rounded-2xl border border-gold-500/45 bg-gradient-to-r from-gold-500/[0.14] to-gold-500/[0.03]
+                        px-6 py-5 flex items-center justify-between gap-5 flex-wrap">
+          <div>
+            <p className="text-[15.5px] font-medium text-gold-300">
+              Founding firm rate: {founder.percent}% off for your first {Math.round(founder.months / 12)} years
+            </p>
+            <p className="text-[13px] text-paper-400 mt-1.5 max-w-[560px]">
+              For the first {founder.cap} firms to claim their listing. Applied at checkout with no code. After {founder.months} months
+              your plan continues at the standard price, and you can cancel any time before then.
+            </p>
+          </div>
+          <p className="text-[12.5px] text-gold-300 tabular whitespace-nowrap">
+            <span className="display text-[30px]">{founder.remaining}</span> of {founder.cap} left
+          </p>
+        </div>
+      )}
       <div className="flex justify-center">
         <button
           type="button"
@@ -31,7 +49,8 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
 
       <div className={cx("mt-9 grid gap-3 mx-auto", plans.length <= 2 ? "md:grid-cols-2 max-w-[920px]" : "lg:grid-cols-2 xl:grid-cols-4")}>
         {plans.map((p) => {
-          const price = yearly ? p.yearly_price : p.monthly_price;
+          const listPrice = yearly ? p.yearly_price : p.monthly_price;
+          const price = founderPrice(listPrice, founder);
           return (
             <div
               key={p.code}
@@ -51,6 +70,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
               <p className="text-[12.5px] text-paper-500 mt-1.5 min-h-[34px]">{p.tagline}</p>
 
               <p className="display text-[clamp(2rem,3.4vw,2.6rem)] mt-5 tabular">
+                {founder?.active && <s className="text-[0.5em] text-paper-600 mr-2 font-sans">{money(listPrice)}</s>}
                 {money(price)}
                 <span className="text-[13px] text-paper-600 font-sans"> {yearly ? "/yr" : "/mo"}</span>
               </p>
@@ -89,7 +109,7 @@ export default function PricingTable({ plans }: { plans: Plan[] }) {
       </div>
 
       <p className="text-[12px] text-paper-600 mt-6 text-center max-w-[620px] mx-auto">
-        Prices in AUD. No GST is charged. No setup fee, no minimum term. Cancel
+        Prices in AUD. No setup fee, no minimum term. Cancel
         from your dashboard and billing stops at the end of the period.
       </p>
     </div>

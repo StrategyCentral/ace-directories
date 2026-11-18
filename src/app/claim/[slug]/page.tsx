@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getListing, getPlans } from "@/lib/queries";
+import { getListing, getPlans, getPracticeAreas } from "@/lib/queries";
+import { getAddons, getFounder } from "@/lib/addons";
 import { db } from "@/lib/supabase";
 import PageHeader from "@/components/PageHeader";
 import ClaimFlow from "@/components/ClaimFlow";
@@ -40,12 +41,16 @@ async function activeClaim(listingId: string) {
 
 export default async function ClaimListingPage({
   params,
-}: { params: Promise<{ slug: string }> }) {
+  searchParams,
+}: { params: Promise<{ slug: string }>; searchParams: Promise<{ cancelled?: string }> }) {
   const { slug } = await params;
+  const { cancelled } = await searchParams;
   const listing = await getListing(slug);
   if (!listing || listing.status === "removed") notFound();
 
-  const [plans, claim] = await Promise.all([getPlans(), activeClaim(listing.id)]);
+  const [plans, claim, addons, founder, areas] = await Promise.all([
+    getPlans(), activeClaim(listing.id), getAddons(), getFounder(), getPracticeAreas(),
+  ]);
 
   if (listing.is_claimed) {
     return (
@@ -87,6 +92,10 @@ export default async function ClaimListingPage({
             }}
             plans={plans}
             existingClaim={claim}
+            addons={addons}
+            founder={founder}
+            areas={areas.filter((a) => a.slug !== "general-practice").map((a) => ({ slug: a.slug, name: a.name }))}
+            cancelled={cancelled === "1"}
           />
 
           {/* Sits under the form, across the full column, so the page doesn't
