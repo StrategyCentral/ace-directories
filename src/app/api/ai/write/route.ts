@@ -46,7 +46,10 @@ const TOOL: Record<string, Anthropic.Tool> = {
   },
 };
 
-const BANNED = /\b(guarantee[ds]?|100%|best|leading|number one|no win,? no fee|cheapest|expert|specialis[et])\b|—/i;
+// Real breaches only: outcome promises, unprovable superlatives, "specialist"
+// claims and restricted personal injury wording.
+const BANNED = /\b(guarantee[ds]?|100 ?%|leading|number one|no win,? no fee|cheapest|expert|specialis[et]s?|best (lawyer|firm|result|outcome|solicitor)s?|we (always )?win)\b/i;
+const tidy = (t: string) => t.replace(/\s*[—–]\s*/g, ", ").replace(/!/g, ".").trim();
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -122,10 +125,13 @@ export async function POST(req: Request) {
     const ok = (t: string) => typeof t === "string" && t.trim().length > 0 && !BANNED.test(t);
     const fits = (t: string) => !guide.maxLength || t.length <= guide.maxLength;
     if (shape === "faq") {
-      const faqs = arr<{ q: string; a: string }>(out.faqs).filter((f) => f && ok(f.q) && ok(f.a));
+      const faqs = arr<{ q: string; a: string }>(out.faqs)
+        .filter((f) => f && typeof f.q === "string" && typeof f.a === "string")
+        .map((f) => ({ q: tidy(f.q), a: tidy(f.a) }))
+        .filter((f) => ok(f.q) && ok(f.a));
       return NextResponse.json({ faqs });
     }
-    const list = arr<string>(out.drafts ?? out.points).map((t) => String(t).trim()).filter((t) => ok(t) && fits(t));
+    const list = arr<string>(out.drafts ?? out.points).map((t) => tidy(String(t))).filter((t) => ok(t) && fits(t));
     if (list.length === 0) {
       return NextResponse.json({ error: "Those drafts broke our rules or ran too long, so we hid them. Try again." }, { status: 500 });
     }
