@@ -129,6 +129,7 @@ export async function POST(req: Request) {
         .filter((f) => f && typeof f.q === "string" && typeof f.a === "string")
         .map((f) => ({ q: tidy(f.q), a: tidy(f.a) }))
         .filter((f) => ok(f.q) && ok(f.a));
+      if (faqs.length === 0) console.error("ai faqs empty; raw shape:", JSON.stringify(out).slice(0, 600));
       return NextResponse.json({ faqs });
     }
     const list = arr<string>(out.drafts ?? out.points).map((t) => tidy(String(t))).filter((t) => ok(t) && fits(t));
