@@ -47,6 +47,6 @@ ${COMPLIANCE}`;
 ${facts}
 
 ${brief ? `What the firm wants to get across: ${brief}\n` : ""}${current ? `Their current draft, to improve on: ${current}\n` : ""}
-Write the ${guide.label.toLowerCase()} now.`;
+${guide.maxLength ? `Each draft must be ${guide.maxLength} characters or fewer, including spaces. Count them. A longer draft will be thrown away.\n` : ""}Write the ${guide.label.toLowerCase()} now.`;
   return { system, user };
 }

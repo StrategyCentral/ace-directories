@@ -111,17 +111,27 @@ export async function POST(req: Request) {
     const out = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")?.input as Record<string, unknown> | undefined;
     if (!out) throw new Error("no output");
 
-    // Belt and braces: drop anything that slipped past the rules.
-    const ok = (t: string) => !BANNED.test(t);
-    const cap = (t: string) => (guide.maxLength ? t.slice(0, guide.maxLength) : t);
+    // Models occasionally hand an array back as a JSON string; accept both.
+    const arr = <T,>(v: unknown): T[] => {
+      if (Array.isArray(v)) return v as T[];
+      if (typeof v === "string") { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
+      return [];
+    };
+    // Belt and braces: drop anything that slipped past the rules or the length
+    // limit. Never cut a draft mid-word; an over-long one is simply not offered.
+    const ok = (t: string) => typeof t === "string" && t.trim().length > 0 && !BANNED.test(t);
+    const fits = (t: string) => !guide.maxLength || t.length <= guide.maxLength;
     if (shape === "faq") {
-      const faqs = ((out.faqs as { q: string; a: string }[]) ?? []).filter((f) => ok(f.q) && ok(f.a));
+      const faqs = arr<{ q: string; a: string }>(out.faqs).filter((f) => f && ok(f.q) && ok(f.a));
       return NextResponse.json({ faqs });
     }
-    const list = ((out.drafts ?? out.points) as string[] ?? []).map((t) => cap(t.trim())).filter(ok);
+    const list = arr<string>(out.drafts ?? out.points).map((t) => String(t).trim()).filter((t) => ok(t) && fits(t));
+    if (list.length === 0) {
+      return NextResponse.json({ error: "Those drafts broke our rules or ran too long, so we hid them. Try again." }, { status: 500 });
+    }
     return NextResponse.json(shape === "list" ? { points: list } : { drafts: list });
   } catch (e) {
     console.error("ai write failed", e);
-    return NextResponse.json({ error: "The writer is busy. Try again in a moment." }, { status: 502 });
+    return NextResponse.json({ error: "The writer is busy. Try again in a moment." }, { status: 500 });
   }
 }
