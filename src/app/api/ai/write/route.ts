@@ -115,9 +115,16 @@ export async function POST(req: Request) {
     if (!out) throw new Error("no output");
 
     // Models occasionally hand an array back as a JSON string; accept both.
-    const arr = <T,>(v: unknown): T[] => {
+    // Models occasionally return the array as a JSON string, or wrapped in an
+    // object ({"faqs": [...]}) inside that string. Unwrap whatever arrives.
+    const arr = <T,>(v: unknown, depth = 0): T[] => {
       if (Array.isArray(v)) return v as T[];
-      if (typeof v === "string") { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
+      if (depth > 3) return [];
+      if (typeof v === "string") { try { return arr<T>(JSON.parse(v), depth + 1); } catch { return []; } }
+      if (v && typeof v === "object") {
+        const inner = Object.values(v as Record<string, unknown>).find((x) => Array.isArray(x) || typeof x === "string");
+        return inner === undefined ? [] : arr<T>(inner, depth + 1);
+      }
       return [];
     };
     // Belt and braces: drop anything that slipped past the rules or the length
@@ -129,7 +136,6 @@ export async function POST(req: Request) {
         .filter((f) => f && typeof f.q === "string" && typeof f.a === "string")
         .map((f) => ({ q: tidy(f.q), a: tidy(f.a) }))
         .filter((f) => ok(f.q) && ok(f.a));
-      if (faqs.length === 0) console.error("ai faqs empty; raw shape:", JSON.stringify(out).slice(0, 600));
       return NextResponse.json({ faqs });
     }
     const list = arr<string>(out.drafts ?? out.points).map((t) => tidy(String(t))).filter((t) => ok(t) && fits(t));
