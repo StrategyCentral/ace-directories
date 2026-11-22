@@ -7,6 +7,7 @@ import ValueCalculator from "@/components/ValueCalculator";
 import { getPlans, getStats } from "@/lib/queries";
 import { getAddons, getFounder } from "@/lib/addons";
 import { money } from "@/lib/format";
+import Testimonials from "@/components/Testimonials";
 
 export const revalidate = 3600;
 
@@ -120,6 +121,8 @@ export default async function ListYourFirmPage() {
           </Reveal>
         ))}
       </section>
+
+      <Testimonials />
 
       {/* ----------------------------------------------------------- plans */}
       <section id="plans" className="mx-auto max-w-[1240px] px-5 py-12 scroll-mt-24">

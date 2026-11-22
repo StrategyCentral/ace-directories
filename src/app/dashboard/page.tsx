@@ -16,6 +16,8 @@ import ActivityPanel from "@/components/ActivityPanel";
 import FirmReviews from "@/components/FirmReviews";
 import TierBadge from "@/components/TierBadge";
 import HideToggle from "@/components/HideToggle";
+import TestimonialForm from "@/components/TestimonialForm";
+import { isTestListing } from "@/lib/test-listing";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: { searchParams: Promise<{ built?: string }> }) {
+  const { built } = await searchParams;
   const session = await getSession();
   if (!session) redirect("/dashboard/login");
 
@@ -117,8 +122,21 @@ export default async function DashboardPage() {
       />
 
       <div className="mx-auto max-w-[1240px] px-5 pb-16 space-y-10">
+        {built === "1" && (
+          <div className="rounded-2xl border border-brand-500/40 bg-brand-500/[0.08] px-6 py-4">
+            <p className="text-[14.5px] font-medium">Your profile is saved and live.</p>
+            <p className="text-[13px] text-paper-400 mt-1">
+              It can take a few seconds to show on your public page. Everything below can be changed at any time.
+            </p>
+          </div>
+        )}
         {rows.map((l) => (
-          <section key={l.id} className="surface rounded-2xl p-6 md:p-8">
+          <section key={l.id} className={"surface rounded-2xl p-6 md:p-8" + (isTestListing(l) ? " test-glow-card" : "")}>
+            {isTestListing(l) && (
+              <p className="mb-5 rounded-lg border-2 border-red-500 bg-red-500/[0.12] px-4 py-2.5 text-center text-[13px] font-bold tracking-[0.12em] uppercase text-red-300">
+                Admin test listing · not a real listing
+              </p>
+            )}
             <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
               <div>
                 <h2 className="text-[17px] font-medium flex items-center gap-2.5">
@@ -173,6 +191,10 @@ export default async function DashboardPage() {
             </div>
 
             <ProfileEditor listing={l} areas={areas} />
+
+            <div className="mt-8">
+              <TestimonialForm listingId={l.id} />
+            </div>
 
             <FirmReviews
               reviews={(reviewRows ?? []).filter((r) => r.listing_id === l.id)}

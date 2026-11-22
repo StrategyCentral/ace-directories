@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import ImageUpload from "@/components/ImageUpload";
+import AiWriter from "@/components/AiWriter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ONBOARDING, type FieldGuide } from "@/content/onboarding";
 import { cx } from "@/lib/format";
@@ -9,6 +12,7 @@ import type { Listing } from "@/lib/types";
 type Values = Record<string, unknown>;
 
 export default function ProfileWizard({ listing }: { listing: Listing }) {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Values>(() => seed(listing));
   const [busy, setBusy] = useState(false);
@@ -34,6 +38,11 @@ export default function ProfileWizard({ listing }: { listing: Listing }) {
       setSaved("Saved");
       setTimeout(() => setSaved(null), 2000);
       if (advance && !isLast) setStep((s) => s + 1);
+      // Finishing takes them to the dashboard, where the result is visible.
+      if (advance && isLast) {
+        router.push("/dashboard?built=1");
+        router.refresh();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save");
     } finally {
@@ -78,7 +87,7 @@ export default function ProfileWizard({ listing }: { listing: Listing }) {
 
             <div className="mt-7 space-y-6">
               {current.fields.map((f) => (
-                <Field key={f.name} guide={f} value={values[f.name]} onChange={(v) => set(f.name, v)} />
+                <Field key={f.name} guide={f} value={values[f.name]} onChange={(v) => set(f.name, v)} listingId={listing.id} />
               ))}
             </div>
 
@@ -137,8 +146,8 @@ export default function ProfileWizard({ listing }: { listing: Listing }) {
 /* ------------------------------------------------------------------ fields */
 
 function Field({
-  guide, value, onChange,
-}: { guide: FieldGuide; value: unknown; onChange: (v: unknown) => void }) {
+  guide, value, onChange, listingId,
+}: { guide: FieldGuide; value: unknown; onChange: (v: unknown) => void; listingId: string }) {
   const [showTip, setShowTip] = useState(false);
 
   return (
@@ -148,7 +157,7 @@ function Field({
           {guide.label}
           {guide.optional && <span className="text-paper-600 text-[11.5px]"> · optional</span>}
         </label>
-        {(guide.good || guide.bad) && (
+        {(guide.good || guide.bad || guide.works) && (
           <button onClick={() => setShowTip((v) => !v)}
                   className="text-[11.5px] text-brand-400 hover:text-brand-200">
             {showTip ? "Hide example" : "Show example"}
@@ -161,7 +170,7 @@ function Field({
         {showTip && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="mt-2.5 space-y-2 text-[12px] leading-relaxed">
+            <div className="mt-2.5 space-y-2.5 text-[12px] leading-relaxed">
               {guide.good && (
                 <p className="rounded-lg border border-brand-500/25 bg-brand-500/[0.05] px-3 py-2 text-paper-300">
                   <span className="text-brand-300 font-medium">Works: </span>{guide.good}
@@ -172,14 +181,52 @@ function Field({
                   <span className="text-red-300 font-medium">Doesn&apos;t: </span>{guide.bad}
                 </p>
               )}
+              {guide.works && (
+                <div className="rounded-lg border border-brand-500/25 bg-brand-500/[0.04] px-3.5 py-3">
+                  <p className="text-brand-300 font-medium mb-2">Works, and why</p>
+                  <ol className="space-y-2.5">
+                    {guide.works.map((e) => (
+                      <li key={e.eg} className="flex gap-2.5">
+                        <span className="text-brand-400 shrink-0">✓</span>
+                        <span>
+                          <span className="block text-paper-100">{e.eg}</span>
+                          <span className="block text-paper-500 mt-0.5">{e.why}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              {guide.fails && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/[0.035] px-3.5 py-3">
+                  <p className="text-red-300 font-medium mb-2">Doesn&apos;t work, and why</p>
+                  <ol className="space-y-2.5">
+                    {guide.fails.map((e) => (
+                      <li key={e.eg} className="flex gap-2.5">
+                        <span className="text-red-400 shrink-0">✕</span>
+                        <span>
+                          <span className="block text-paper-300 line-through decoration-red-400/50">{e.eg}</span>
+                          <span className="block text-paper-500 mt-0.5">{e.why}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="mt-2.5">
-        <Control guide={guide} value={value} onChange={onChange} />
+        {guide.type === "image" ? (
+          <ImageUpload listingId={listingId} kind={guide.image ?? "photo"} value={String(value ?? "")}
+            onChange={(url) => onChange(url)} />
+        ) : (
+          <Control guide={guide} value={value} onChange={onChange} />
+        )}
       </div>
+      {guide.ai && <AiWriter listingId={listingId} guide={guide} value={value} onChange={onChange} />}
     </div>
   );
 }

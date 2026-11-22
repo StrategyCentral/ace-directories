@@ -25,3 +25,16 @@ export function validClaimSig(claimId: string, sig: string | null | undefined): 
 export function claimReviewUrl(claimId: string): string {
   return `${SITE.url}/admin/claims/${claimId}?sig=${claimSig(claimId) ?? ""}`;
 }
+
+/** Same idea for testimonials: the link opens a page, a button press decides. */
+export function testimonialSig(id: string): string | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return createHmac("sha256", secret).update(`testimonial-review:${id}`).digest("hex").slice(0, 40);
+}
+
+export function validTestimonialSig(id: string, sig: string | null | undefined): boolean {
+  const want = testimonialSig(id);
+  if (!want || !sig || sig.length !== want.length) return false;
+  return timingSafeEqual(Buffer.from(want), Buffer.from(sig));
+}

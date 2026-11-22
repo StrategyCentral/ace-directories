@@ -1,7 +1,10 @@
 import { STATE_BY_CODE } from "./site";
 
-export const money = (cents: number) =>
-  `$${(cents / 100).toLocaleString("en-AU", { maximumFractionDigits: 0 })}`;
+/** Whole dollars when the amount is whole, otherwise exact cents ($39.80, never "$40"). */
+export const money = (cents: number) => {
+  const digits = cents % 100 === 0 ? 0 : 2;
+  return "$" + (cents / 100).toLocaleString("en-AU", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+};
 
 export const telHref = (phone: string | null) =>
   phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined;

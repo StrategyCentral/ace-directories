@@ -7,6 +7,8 @@ import type { Plan } from "@/lib/types";
 import { cx, money } from "@/lib/format";
 import { sellFor } from "@/content/plans";
 import { founderPrice, type Founder } from "@/lib/addon-types";
+import FounderBanner from "@/components/FounderBanner";
+import PaymentBadges from "@/components/PaymentBadges";
 
 export default function PricingTable({ plans, founder = null }: { plans: Plan[]; founder?: Founder | null }) {
   const [yearly, setYearly] = useState(true);
@@ -14,20 +16,8 @@ export default function PricingTable({ plans, founder = null }: { plans: Plan[];
   return (
     <div>
       {founder?.active && (
-        <div className="mx-auto max-w-[920px] mb-7 rounded-2xl border border-gold-500/45 bg-gradient-to-r from-gold-500/[0.14] to-gold-500/[0.03]
-                        px-6 py-5 flex items-center justify-between gap-5 flex-wrap">
-          <div>
-            <p className="text-[15.5px] font-medium text-gold-300">
-              Founding firm rate: {founder.percent}% off for your first {Math.round(founder.months / 12)} years
-            </p>
-            <p className="text-[13px] text-paper-400 mt-1.5 max-w-[560px]">
-              For the first {founder.cap} firms to claim their listing. Applied at checkout with no code. After {founder.months} months
-              your plan continues at the standard price, and you can cancel any time before then.
-            </p>
-          </div>
-          <p className="text-[12.5px] text-gold-300 tabular whitespace-nowrap">
-            <span className="display text-[30px]">{founder.remaining}</span> of {founder.cap} left
-          </p>
+        <div className="mx-auto max-w-[920px] mb-9">
+          <FounderBanner founder={founder} featuredMonthly={plans.find((p) => p.code === "featured")?.monthly_price} />
         </div>
       )}
       <div className="flex justify-center">
@@ -107,6 +97,8 @@ export default function PricingTable({ plans, founder = null }: { plans: Plan[];
           );
         })}
       </div>
+
+      <PaymentBadges className="mt-8" />
 
       <p className="text-[12px] text-paper-600 mt-6 text-center max-w-[620px] mx-auto">
         Prices in AUD. No setup fee, no minimum term. Cancel

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Listing } from "@/lib/types";
 import { isPaid } from "@/lib/types";
+import { isTestListing } from "@/lib/test-listing";
 import { areaLabel, cx, initials, telHref } from "@/lib/format";
 import TierBadge from "./TierBadge";
 import { TrackedLink, TrackedPhone } from "./Track";
@@ -23,8 +24,14 @@ export default function ListingCard({
       className={cx(
         "surface lift rounded-[var(--radius-card)] p-5 flex gap-4 relative overflow-hidden",
         featured && "border-gold-500/25 bg-gradient-to-br from-gold-500/[0.06] to-transparent",
+        isTestListing(listing) && "test-glow-card",
       )}
     >
+      {isTestListing(listing) && (
+        <span className="absolute top-0 left-0 text-[10px] tracking-[0.14em] uppercase bg-red-500 text-white font-bold px-3 py-1 rounded-br-lg z-10">
+          Admin test listing · not real
+        </span>
+      )}
       {(featured || listing.exclusive_here) && (
         <span className="absolute top-0 right-0 text-[10px] tracking-[0.14em] uppercase
                          bg-gold-500 text-[#1a1406] font-semibold px-3 py-1 rounded-bl-lg">

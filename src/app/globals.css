@@ -123,10 +123,12 @@ body {
 
 /* Fine grid used behind section headers — reads as "structured, official" */
 .grid-lines {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-  background-size: 64px 64px;
+  /* Vertical bars only, each with a faint highlight so it reads as a round steel bar. */
+  background-image: linear-gradient(90deg,
+    transparent 0, transparent 26px,
+    rgba(255,255,255,0.025) 26px, rgba(255,255,255,0.075) 28px, rgba(255,255,255,0.02) 31px,
+    transparent 31px);
+  background-size: 58px 100%;
   mask-image: radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 100%);
 }
 
@@ -213,3 +215,51 @@ body {
 @keyframes btn-sweep { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
 @keyframes pop-ring { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .btn-shine::after { animation: none; } }
+
+/* Admin test listing: pulsing red outline so it can never pass as a real firm. */
+@keyframes test-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(239,68,68,.9), 0 0 22px 4px rgba(239,68,68,.45); }
+  50%      { box-shadow: 0 0 0 2px rgba(239,68,68,1),  0 0 42px 10px rgba(239,68,68,.7); }
+}
+.test-glow { outline: 2px solid rgba(239,68,68,.9); outline-offset: -2px; box-shadow: inset 0 0 60px rgba(239,68,68,.18); }
+.test-glow-card { animation: test-pulse 2.2s ease-in-out infinite; border-color: rgba(239,68,68,.9) !important; }
+.test-banner > div { animation: test-pulse 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .test-glow-card, .test-banner > div { animation: none; box-shadow: 0 0 0 2px rgba(239,68,68,.9); } }
+
+/* ---------------------------------------------------------- founders banner */
+.founder-banner {
+  position: relative; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(201,168,76,.32), transparent 60%),
+    radial-gradient(80% 70% at 50% 120%, rgba(63,116,255,.30), transparent 65%),
+    linear-gradient(180deg, #0d1220, #070a12);
+  border: 1px solid rgba(212,184,98,.45);
+  box-shadow: 0 0 0 1px rgba(212,184,98,.15), 0 30px 120px -40px rgba(201,168,76,.55);
+}
+.founder-banner::before {
+  /* Bars receding to a vanishing point, the "floor" behind the headline. */
+  content: ""; position: absolute; inset: 35% -30% -40% -30%; z-index: -1;
+  background-image: linear-gradient(90deg, transparent 0 34px, rgba(212,184,98,.22) 34px 36px, transparent 36px);
+  background-size: 70px 100%;
+  transform: perspective(380px) rotateX(58deg);
+  transform-origin: 50% 0;
+  mask-image: linear-gradient(180deg, transparent, #000 35%, #000 70%, transparent);
+}
+.founder-title {
+  background: linear-gradient(180deg, #fff6d6 0%, #e6d08a 45%, #b8913a 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(212,184,98,.55)) drop-shadow(0 0 2px rgba(255,240,200,.9));
+  animation: founder-flicker 5s ease-in-out infinite;
+}
+@keyframes founder-flicker { 0%, 92%, 100% { opacity: 1; } 94% { opacity: .78; } 96% { opacity: 1; } 97% { opacity: .85; } }
+.founder-tile {
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  border: 1px solid rgba(212,184,98,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 30px -12px rgba(0,0,0,.8);
+}
+.founder-bar > span {
+  background: linear-gradient(90deg, #b8913a, #f2dc93, #b8913a);
+  background-size: 200% 100%; animation: founder-sheen 2.6s linear infinite;
+}
+@keyframes founder-sheen { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .founder-title, .founder-bar > span { animation: none; } }
