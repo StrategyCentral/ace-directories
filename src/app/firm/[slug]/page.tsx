@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/jsonld";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -352,7 +353,7 @@ export default async function FirmPage({ params }: { params: Promise<{ slug: str
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLd({
             "@context": "https://schema.org",
             "@type": "LegalService",
             name: listing.full_name,

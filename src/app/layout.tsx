@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/jsonld";
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
@@ -57,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLd({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: SITE.name,

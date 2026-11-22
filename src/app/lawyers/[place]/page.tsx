@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/jsonld";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -233,7 +234,7 @@ export default async function PlacePage({ params }: { params: Promise<{ place: s
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLd({
             "@context": "https://schema.org",
             "@type": "CollectionPage",
             name: `Lawyers in ${where}`,

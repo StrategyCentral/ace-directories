@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
-import { signToken } from "@/lib/auth";
+import { signMagicToken } from "@/lib/auth";
+import { clientIp } from "@/lib/client-ip";
+import { rateLimited } from "@/lib/rate-limit";
 import { send } from "@/lib/email";
 import { SITE } from "@/lib/site";
 
@@ -21,6 +23,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please enter a valid email address" }, { status: 400 });
   }
 
+  if (rateLimited(`magic:${clientIp(req)}`, 10, 3_600_000) || rateLimited(`magic:${email}`, 5, 3_600_000)) {
+    return NextResponse.json({ error: "Too many sign-in requests. Try again later." }, { status: 429 });
+  }
+
   const { data: claims } = await db()
     .from("claims")
     .select("id")
@@ -29,7 +35,14 @@ export async function POST(req: Request) {
     .limit(1);
 
   if (claims && claims.length > 0) {
-    const token = await signToken({ email }, "20m");
+    const { token, jti } = await signMagicToken(email, "20m");
+    const { error } = await db().from("auth_magic_links").insert({
+      jti, email, expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+    });
+    if (error) {
+      console.error("magic link store failed", error);
+      return NextResponse.json({ error: "Could not send a sign-in link right now. Try again shortly." }, { status: 500 });
+    }
     const url = `${SITE.url}/api/auth/callback?token=${encodeURIComponent(token)}`;
     await send({
       to: email,

@@ -30,25 +30,37 @@ export async function POST(req: Request) {
   const supabase = db();
   const [{ data: plan }, { data: listing }] = await Promise.all([
     supabase.from("plans").select("*").eq("code", planCode).maybeSingle(),
-    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id,suburb_id,source").eq("id", listingId).maybeSingle(),
+    supabase.from("lawyers").select("id,slug,full_name,stripe_customer_id,suburb_id,is_claimed,stripe_subscription_id,status,source").eq("id", listingId).maybeSingle(),
   ]);
 
   if (!plan) return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
   if (!listing) return NextResponse.json({ error: "Unknown listing" }, { status: 404 });
 
-  let claimEmail: string | undefined;
-  if (claimId) {
-    const { data: claim } = await supabase
-      .from("claims").select("email,expires_at,status").eq("id", claimId).maybeSingle();
-    if (!claim) return NextResponse.json({ error: "Claim not found" }, { status: 404 });
-    if (new Date(claim.expires_at).getTime() < Date.now()) {
-      return NextResponse.json({ error: "This claim window has closed" }, { status: 410 });
-    }
-    claimEmail = claim.email;
-    await supabase.from("claims")
-      .update({ selected_plan: planCode, status: "awaiting_payment" })
-      .eq("id", claimId);
+  // Checkout is only for a verified claim on an unowned listing. Without this
+  // anyone could buy a plan against a rival's listing_id and the webhook would
+  // overwrite its tier and Stripe ids. Owners change plans via /api/billing/change.
+  if (!claimId) {
+    return NextResponse.json({ error: "Start a claim on this listing first" }, { status: 400 });
   }
+  if (listing.status === "removed" || (listing.is_claimed && listing.stripe_subscription_id)) {
+    return NextResponse.json({ error: "This listing has already been claimed" }, { status: 409 });
+  }
+  const { data: claim } = await supabase
+    .from("claims").select("listing_id,email,expires_at,status,verified_at").eq("id", claimId).maybeSingle();
+  if (!claim || claim.listing_id !== listing.id) {
+    return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+  }
+  if (claim.status !== "awaiting_payment" || !claim.verified_at || !claim.expires_at) {
+    return NextResponse.json({ error: "Confirm your email before choosing a plan" }, { status: 403 });
+  }
+  if (new Date(claim.expires_at).getTime() < Date.now()) {
+    return NextResponse.json({ error: "This claim window has closed" }, { status: 410 });
+  }
+  const claimEmail: string = claim.email;
+  await supabase.from("claims")
+    .update({ selected_plan: planCode })
+    .eq("id", claimId)
+    .eq("status", "awaiting_payment");
 
   // ---- order bumps: add-ons bought with the plan
   const want = (body.addons ?? {}) as AddonSelection;

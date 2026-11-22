@@ -1,3 +1,4 @@
+import { jsonLd } from "@/lib/jsonld";
 import Link from "next/link";
 import type { Listing } from "@/lib/types";
 import { telHref } from "@/lib/format";
@@ -153,7 +154,7 @@ export default function ConversionProfile({ listing }: { listing: Listing }) {
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
+              __html: jsonLd({
                 "@context": "https://schema.org",
                 "@type": "FAQPage",
                 mainEntity: faqs.map((f) => ({
